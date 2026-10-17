@@ -1,7 +1,6 @@
 import { createHashRouter, Navigate, RouterProvider } from 'react-router'
 import { Layout } from './components/Layout'
 import { BattlePage } from './pages/Battle/BattlePage'
-import { ComingSoon } from './pages/ComingSoon'
 import { DataLayout } from './pages/Data/DataLayout'
 import { EquipmentPage } from './pages/Data/EquipmentPage'
 import { ItemsPage } from './pages/Data/ItemsPage'
@@ -12,6 +11,7 @@ import { Home } from './pages/Home'
 import { JumonPage } from './pages/Jumon/JumonPage'
 import { NotFound } from './pages/NotFound'
 import { SettingsPage } from './pages/Settings/SettingsPage'
+import { WorldPage } from './pages/World/WorldPage'
 
 // GitHub Pages で直リンク・リロードが確実に動くよう HashRouter を使う
 const router = createHashRouter([
@@ -21,7 +21,7 @@ const router = createHashRouter([
       { index: true, element: <Home /> },
       { path: 'jumon', element: <JumonPage /> },
       { path: 'battle', element: <BattlePage /> },
-      { path: 'world', element: <ComingSoon title="アレフガルドのせかい" /> },
+      { path: 'world', element: <WorldPage /> },
       {
         path: 'data',
         element: <DataLayout />,

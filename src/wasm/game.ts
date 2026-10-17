@@ -5,12 +5,21 @@ import type {
   BattleResult,
   BattleStep,
   BattleTurnResult,
+  CharacterSpriteSummary,
+  DialogueData,
+  EventResult,
+  EventStep,
   EnemySpriteSummary,
   EquipmentData,
+  GameMapData,
+  MapSummary,
   MonsterData,
   PlayerState,
   SpellData,
   StatusData,
+  StoryState,
+  TalkData,
+  WarpData,
 } from './types'
 
 /** WASM の例外（JsValue の文字列）を Error に変換する */
@@ -113,6 +122,58 @@ export class DamdaraGame {
   /** NES の色番号 → [r, g, b] */
   getNesPalette(): [number, number, number][] {
     return call(() => this.game.get_nes_palette())
+  }
+
+  getMaps(): MapSummary[] {
+    return call(() => this.game.get_maps())
+  }
+
+  getMap(id: number): GameMapData {
+    return call(() => this.game.get_map(id))
+  }
+
+  getWarps(): WarpData[] {
+    return call(() => this.game.get_warps())
+  }
+
+  getDialogues(): DialogueData[] {
+    return call(() => this.game.get_dialogues())
+  }
+
+  /** マップの範囲（タイル単位）を RGBA で描く（width * 16 * height * 16 * 4 バイト） */
+  renderMapRgba(mapId: number, x: number, y: number, width: number, height: number): Uint8Array {
+    return call(() => this.game.render_map_rgba(mapId, x, y, width, height))
+  }
+
+  /** NPC の絵の番号を キャラクター id に変える（マップによって変わる） */
+  npcCharacterId(sprite: number, mapId: number, afterEnding = false): number {
+    return this.game.npc_character_id(sprite, mapId, afterEnding)
+  }
+
+  getTalks(): TalkData[] {
+    return call(() => this.game.get_talks())
+  }
+
+  /**
+   * NPC に はなしかけた ときの 会話を すすめる（いまの プレイヤーで）。
+   * answers は はい／いいえ の こたえ（じゅんばん）。おみせ・やどや では null
+   */
+  runEvent(talkId: number, mapId: number, story: StoryState, answers: boolean[], seed?: number): EventResult | null {
+    return call(() => this.game.run_event(talkId, mapId, story, answers, seed ?? null) ?? null)
+  }
+
+  /** イベントの ながれ（ステップの 木）。イベントの ない はなしでは null */
+  getEventScript(talkId: number): EventStep[] | null {
+    return call(() => this.game.get_event_script(talkId) ?? null)
+  }
+
+  getCharacterSprites(): CharacterSpriteSummary[] {
+    return call(() => this.game.get_character_sprites())
+  }
+
+  /** キャラクターの 1 コマ（0 か 1）を RGBA で（16 * 16 * 4 バイト） */
+  getCharacterSpriteRgba(id: number, frame: number): Uint8Array {
+    return call(() => this.game.get_character_sprite_rgba(id, frame))
   }
 
   getMonsters(): MonsterData[] {

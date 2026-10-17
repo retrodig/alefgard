@@ -1,4 +1,4 @@
-// damdara 1.1.0 の WASM API が返す値の型（src/wasm.rs の構造体に対応）
+// damdara 1.2.0 の WASM API が返す値の型（src/wasm.rs の構造体に対応）
 
 export interface PlayerSummary {
   name: string
@@ -77,6 +77,129 @@ export interface BattleBackgroundData {
   height: number
   /** 16x16 のブロックを表示していく順番（[列, 行]） */
   reveal_order: [number, number][]
+}
+
+export type MapKind = 'field' | 'town' | 'castle' | 'shrine' | 'dungeon'
+
+/** マップの情報（タイルを含まない） */
+export interface MapSummary {
+  id: number
+  name: string
+  name_en: string
+  kind: MapKind
+  width: number
+  height: number
+  border_tile: number
+  npc_count: number
+}
+
+export interface NpcData {
+  x: number
+  y: number
+  /** キャラクターの絵の番号（npc_character_id で キャラクター id に変える） */
+  sprite: number
+  direction: number
+  moving: boolean
+  talk_id: number
+  /** はなしが メッセージのときの セリフの id（おみせ など とくべつな はなしでは ない） */
+  dialogue_id?: number | null
+  talk_kind: TalkKind
+}
+
+export type TalkKind =
+  | 'weapon_shop'
+  | 'item_shop'
+  | 'key_shop'
+  | 'fairy_water_shop'
+  | 'inn'
+  | 'message'
+  | 'question'
+  | 'event'
+
+export interface ShopItemData {
+  kind: 'weapon' | 'armor' | 'shield' | 'item' | 'herb'
+  /** get_weapons などの 添字（やくそう には ない） */
+  index?: number
+  name: string
+  price: number
+}
+
+/** NPC に はなしかけた ときに おきること（get_talk） */
+export interface TalkData {
+  talk_id: number
+  kind: TalkKind
+  items: ShopItemData[]
+  /** かぎ・せいすい・やどやの ねだん */
+  price?: number | null
+  dialogue_id?: number | null
+  yes_dialogue_id?: number | null
+  no_dialogue_id?: number | null
+  /** イベントの やくわり（おうさま など） */
+  role?: string | null
+  role_en?: string | null
+  related_dialogue_ids: number[]
+}
+
+/** ものがたりの すすみぐあい（じゅもんに はいらない もの） */
+export interface StoryState {
+  carrying_princess?: boolean
+  princess_delivered?: boolean
+  left_throne_room?: boolean
+  dragonlord_defeated?: boolean
+}
+
+export type EventAction =
+  | { type: 'remove_curses' }
+  | { type: 'restore_mp' }
+  | { type: 'flash' }
+  | { type: 'take_item'; item: number }
+  | { type: 'give_item'; item: number }
+  | { type: 'princess_takes_item'; items: number[] }
+  | { type: 'npc_disappears' }
+  | { type: 'leave_map' }
+  | { type: 'deliver_princess' }
+  | { type: 'tell_password' }
+  | { type: 'exp_to_next_level' }
+  | { type: 'reset_player' }
+  | { type: 'game_over' }
+  | { type: 'battle'; monster_id: number }
+
+/** イベントの ながれの 1 ステップ（必要な ものだけ 型を つける） */
+export type EventStep =
+  | { type: 'say'; dialogue_id: number }
+  | { type: 'ask' | 'ask_until_yes'; dialogue_id: number; yes: EventStep[]; no: EventStep[] }
+  | { type: 'if'; condition: { type: string }; then: EventStep[]; otherwise: EventStep[] }
+  | { type: 'random'; choices: { weight: number; steps: EventStep[] }[] }
+  | { type: 'do'; action: EventAction }
+
+/** run_event の けっか。lines は さいしょから ぜんぶ（こたえるたびに のびる） */
+export interface EventResult {
+  lines: { dialogue_id: number; text: string }[]
+  actions: EventAction[]
+  status: 'finished' | 'waiting_answer'
+}
+
+export interface GameMapData extends MapSummary {
+  /** 行優先（index = y * width + x） */
+  tiles: number[]
+  npcs: NpcData[]
+}
+
+/** かいだん・いりぐち：[マップ id, x, y] から [マップ id, x, y] へ */
+export interface WarpData {
+  from: [number, number, number]
+  to: [number, number, number]
+}
+
+export interface DialogueData {
+  id: number
+  text: string
+}
+
+export interface CharacterSpriteSummary {
+  id: number
+  name: string
+  name_en: string
 }
 
 export interface MonsterData {
