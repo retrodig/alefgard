@@ -1,0 +1,158 @@
+/* ファミコンの画面風（オリジナル描画）：真っ黒な画面に白枠のウィンドウ、▶ カーソル */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.screen {
+  --retro-fg: #fcfcfc;
+  --retro-dim: #7c7c7c;
+  --retro-size: clamp(14px, 3.4vw, 22px);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--retro-size) * 0.8);
+  width: 100%;
+  padding: calc(var(--retro-size) * 1.2);
+  border-radius: 12px;
+  background: #000;
+  box-shadow:
+    inset 0 0 60px rgb(255 255 255 / 4%),
+    0 0 0 1px rgb(255 255 255 / 6%);
+  color: var(--retro-fg);
+  font-size: var(--retro-size);
+  line-height: 1.5;
+}
+
+.window {
+  padding: calc(var(--retro-size) * 0.8) calc(var(--retro-size) * 1);
+  border: 4px solid var(--retro-fg);
+  border-radius: 10px;
+}
+
+.prompt {
+  margin: 0 0 calc(var(--retro-size) * 0.6);
+  text-align: center;
+}
+
+/* 入力中のじゅもん（5 文字 × 4 段） */
+/* 1 行に並べ、5 文字ごとに間をあける（狭い画面では 5 文字単位で折り返す） */
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(var(--retro-size) * 0.2) 0.6em;
+}
+
+.slotRow {
+  display: flex;
+  white-space: nowrap;
+}
+
+.slot,
+.slotEmpty,
+.slotCurrent {
+  display: inline-block;
+  width: 1.15em;
+  text-align: center;
+}
+
+/* まだ入力していないマスの「・」は暗く */
+.slotEmpty {
+  color: var(--retro-dim);
+}
+
+.slotCurrent {
+  animation: blink 0.9s steps(1) infinite;
+}
+
+/* 50 音表 */
+.keyboard {
+  display: grid;
+  gap: calc(var(--retro-size) * 0.25) 0;
+  outline: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.keyboard:focus-visible {
+  box-shadow: none;
+}
+
+.keyRow {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) 0.8em repeat(5, minmax(0, 1fr));
+}
+
+.key {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.key::before {
+  content: '▶';
+  flex: none;
+  width: 1em;
+  font-size: 0.7em;
+  visibility: hidden;
+}
+
+.keyActive::before {
+  visibility: visible;
+  animation: blink 0.9s steps(1) infinite;
+}
+
+.key:hover:not(.keyActive) {
+  color: #fcbc3c;
+}
+
+.command {
+  margin-top: calc(var(--retro-size) * 0.4);
+  white-space: nowrap;
+}
+
+.message {
+  min-height: 1.5em;
+  margin: 0;
+  color: #f87858;
+  text-align: center;
+}
+
+.help {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+}
+
+.help kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  margin-right: 2px;
+  padding: 0 5px;
+  border: 1px solid var(--color-border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.6875rem;
+  text-align: center;
+}
+
+@keyframes blink {
+  50% {
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slotCurrent,
+  .keyActive::before {
+    animation: none;
+  }
+}
