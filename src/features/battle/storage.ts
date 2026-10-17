@@ -39,3 +39,71 @@ export function loadLastMonster(): number | null {
 export function storeLastMonster(id: number): void {
   write(MONSTER_KEY, String(id))
 }
+
+// ===== オートせんとう =====
+
+const AUTO_KEY = 'alefgard:battle:auto'
+
+export const AUTO_COUNT_MAX = 100
+
+export interface AutoBattleSetting {
+  enabled: boolean
+  /** たたかう かいすう（1〜100） */
+  count: number
+  /** 画面で たたかわず、まとめて けっか だけ だす */
+  resultOnly: boolean
+  /** まけたら そこで とめる */
+  stopOnLoss: boolean
+}
+
+export const DEFAULT_AUTO_BATTLE: AutoBattleSetting = { enabled: false, count: 10, resultOnly: false, stopOnLoss: true }
+
+export function clampAutoCount(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_AUTO_BATTLE.count
+  return Math.min(Math.max(Math.round(value), 1), AUTO_COUNT_MAX)
+}
+
+export function loadAutoBattle(): AutoBattleSetting {
+  try {
+    const parsed: unknown = JSON.parse(read(AUTO_KEY) ?? 'null')
+    if (!parsed || typeof parsed !== 'object') return DEFAULT_AUTO_BATTLE
+    const { enabled, count, resultOnly, stopOnLoss } = parsed as Record<string, unknown>
+    return {
+      enabled: enabled === true,
+      count: clampAutoCount(Number(count)),
+      resultOnly: resultOnly === true,
+      stopOnLoss: stopOnLoss !== false,
+    }
+  } catch {
+    return DEFAULT_AUTO_BATTLE
+  }
+}
+
+export function storeAutoBattle(setting: AutoBattleSetting): void {
+  write(AUTO_KEY, JSON.stringify(setting))
+}
+
+// ===== けいけんち・ゴールドを たすか =====
+
+const REWARDS_KEY = 'alefgard:battle:rewards'
+
+/** 勝ったときに けいけんち・ゴールドを ゆうしゃに たすか（はじめは たす） */
+export function loadGainRewards(): boolean {
+  return read(REWARDS_KEY) !== 'off'
+}
+
+export function storeGainRewards(gain: boolean): void {
+  write(REWARDS_KEY, gain ? 'on' : 'off')
+}
+
+// ===== じゅんび の オプションの ひらき ぐあい =====
+
+const OPTIONS_OPEN_KEY = 'alefgard:battle:options-open'
+
+export function loadOptionsOpen(): boolean {
+  return read(OPTIONS_OPEN_KEY) === 'true'
+}
+
+export function storeOptionsOpen(open: boolean): void {
+  write(OPTIONS_OPEN_KEY, String(open))
+}

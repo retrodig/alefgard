@@ -1,12 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Swords } from 'lucide-react'
+import { ScrollText, Swords } from 'lucide-react'
 import { Window } from '../../components/Window'
 import { monsterLabel } from '../../data/monsters'
 import { itemOptions, spellOptions } from '../../features/battle/commands'
 import { cleanBattleMessages, parseRewards } from '../../features/battle/messages'
+import {
+  addRecords,
+  loadHistory,
+  newRecordId,
+  outcomeOf,
+  storeHistory,
+  type BattleOutcome,
+  type BattleRecord,
+} from '../../features/battle/history'
 import { nextReveal, revealLength, speedOption } from '../../features/battle/reveal'
 import { applyRewards, levelOf } from '../../features/battle/rewards'
-import { loadLastMonster, loadMessageSpeed, storeLastMonster } from '../../features/battle/storage'
+import {
+  loadAutoBattle,
+  loadGainRewards,
+  loadLastMonster,
+  loadMessageSpeed,
+  storeAutoBattle,
+  storeGainRewards,
+  storeLastMonster,
+  type AutoBattleSetting,
+} from '../../features/battle/storage'
 import { formatName } from '../../features/jumon/kana'
 import { decodePassword, DEFAULT_SAVE, encodePassword, type SaveData } from '../../features/jumon/password'
 import { loadSlots, loadStoredPassword, storePassword, storeSlots } from '../../features/jumon/storage'
@@ -15,13 +33,32 @@ import type { DamdaraGame } from '../../wasm/game'
 import type { BattleAction, BattleTurnResult } from '../../wasm/types'
 import { useDamdara } from '../../wasm/useDamdara'
 import { BattleScreen, type BattlePlace, type LogLine } from './BattleScreen'
+import { BattleLogDialog } from './BattleLogDialog'
 import { BattleSetup, type PlayerSource } from './BattleSetup'
 import styles from './Battle.module.css'
+
+/** オートで 次のターン・次のせんとうへ進むまでの間 */
+const AUTO_TURN_DELAY_MS = 300
+const AUTO_NEXT_BATTLE_DELAY_MS = 900
+/** けっか のみ で 1 回のせんとうが これより長く続いたら打ち切る（念のため） */
+const MAX_TURNS = 300
+
+/** オートせんとうの進みぐあい */
+interface AutoRun {
+  /** いま なんかいめか（1 から） */
+  count: number
+  total: number
+  wins: number
+  losses: number
+  /** まけたら とめる */
+  stopOnLoss: boolean
+}
 
 interface Session {
   /** たたかうたびに増やし、画面を作り直す */
   id: number
   place: BattlePlace
+  monsterId: number
   /** たたかっている ゆうしゃ（やくそうを使ったとき・勝ったときに この じゅもんを書きかえる） */
   sourceId: string
   /**
@@ -89,6 +126,11 @@ export function BattlePage() {
     return master.monsters.some((m) => m.id === last) ? (last as number) : (master.monsters[0]?.id ?? 0)
   })
   const [speed] = useState(() => speedOption(loadMessageSpeed()))
+  const [autoSetting, setAutoSetting] = useState(loadAutoBattle)
+  const [autoRun, setAutoRun] = useState<AutoRun | null>(null)
+  const [gainRewards, setGainRewards] = useState(loadGainRewards)
+  const [history, setHistory] = useState(loadHistory)
+  const [logOpen, setLogOpen] = useState(false)
   const [place, setPlace] = useState<BattlePlace>('field')
   const [session, setSession] = useState<Session | null>(null)
   const [shown, setShown] = useState(0)
@@ -120,30 +162,175 @@ export function BattlePage() {
 
   const endIntro = useCallback(() => setIntroDone(true), [])
 
-  const start = () => {
+  /** せんとうを始める（target を渡すと その ゆうしゃ・モンスター・ばしょで始める） */
+  const startBattle = (target?: Pick<Session, 'sourceId' | 'monsterId' | 'place'>) => {
+    const from = sources.find((s) => s.id === target?.sourceId) ?? source
+    const fromSave = from === source ? save : decodePassword(from.password).save
+    const targetMonster = target?.monsterId ?? monsterId
     gameRef.current?.free()
     const game = createGame()
     gameRef.current = game
-    game.loadFromPassword(source.password)
-    const result = game.startBattle(monsterId)
+    game.loadFromPassword(from.password)
+    const result = game.startBattle(targetMonster)
     setSession((prev) => ({
       id: (prev?.id ?? 0) + 1,
-      place,
-      sourceId: source.id,
-      save,
+      place: target?.place ?? place,
+      monsterId: targetMonster,
+      sourceId: from.id,
+      save: fromSave,
       rewarded: false,
       result,
       log: toLog(result),
     }))
     setShown(0)
     setIntroDone(false)
+    if (!target) screenRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
+  /** オートの「けっか のみ」：画面で たたかわず、決めた かいすう まとめて たたかい、けっか だけ メッセージに出す */
+  const runResultOnly = (count: number) => {
+    gameRef.current?.free()
+    const game = createGame()
+    gameRef.current = game
+    let current = save
+    let last: BattleTurnResult | null = null
+    let fought = 0
+    let wins = 0
+    let losses = 0
+    let stopped = false
+    let gainedExp = 0
+    let gainedGold = 0
+    const records: BattleRecord[] = []
+    for (let i = 0; i < count && !stopped; i++) {
+      const hero = current
+      game.loadFromPassword(encodePassword(hero))
+      let result = game.startBattle(monsterId)
+      const log = toLog(result)
+      for (let turn = 0; turn < MAX_TURNS && !result.is_finished; turn++) {
+        result = game.battleTurn('attack')
+        log.push(...toLog(result))
+      }
+      if (!result.is_finished) game.endBattle()
+      fought++
+      last = result
+      if (result.monster_defeated) {
+        wins++
+        const rewards = parseRewards(cleanBattleMessages(result.messages))
+        gainedExp += rewards.exp
+        gainedGold += rewards.gold
+        if (gainRewards) current = applyRewards(current, rewards)
+        if (levelOf(current.experience, master.statusTable) > levelOf(hero.experience, master.statusTable)) {
+          log.push({ turn: result.turn, text: 'レベルが あがった！' })
+        }
+      }
+      if (!result.player_survived) {
+        losses++
+        stopped = autoSetting.stopOnLoss
+      }
+      records.push(makeRecord(hero, result, log, result.is_finished ? outcomeOf(result) : 'quit'))
+    }
+    record(records)
+    if (!last) return
+    if (current !== save) saveHero(source.id, current)
+
+    const levelBefore = levelOf(save.experience, master.statusTable)
+    const levelAfter = levelOf(current.experience, master.statusTable)
+    const others = fought - wins - losses
+    const texts = [
+      `オート けっか（${fought}せん）`,
+      `${wins}しょう ${losses}はい${others > 0 ? ` ほか ${others}` : ''}`,
+      // たす せっていでは 上限で止まった ぶんを のぞいた 実際の ふえかたを出す
+      gainRewards
+        ? `けいけんち +${current.experience - save.experience} ゴールド +${current.gold - save.gold}`
+        : `けいけんち ${gainedExp} ゴールド ${gainedGold}（たさない）`,
+      ...(levelAfter > levelBefore ? [`レベル ${levelBefore} → ${levelAfter}`] : []),
+      ...(stopped ? [`${fought}せんめで まけたので とめた`] : []),
+    ]
+    const turn = last.turn
+    setAutoRun(null)
+    setSession((prev) => ({
+      id: (prev?.id ?? 0) + 1,
+      place,
+      monsterId,
+      sourceId: source.id,
+      save: current,
+      rewarded: true,
+      result: last,
+      log: texts.map((text) => ({ turn, text })),
+    }))
+    setShown(0)
+    setIntroDone(false)
     screenRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
+  /** じゅんび の「たたかう」：オートが オンなら 決めた かいすう くりかえす */
+  const start = () => {
+    if (autoSetting.enabled && autoSetting.resultOnly) {
+      runResultOnly(autoSetting.count)
+      return
+    }
+    setAutoRun(
+      autoSetting.enabled
+        ? { count: 1, total: autoSetting.count, wins: 0, losses: 0, stopOnLoss: autoSetting.stopOnLoss }
+        : null,
+    )
+    startBattle()
+  }
+
+  /** おなじ条件で もういちど（手動で）たたかう */
+  const restart = () => {
+    setAutoRun(null)
+    startBattle(session ?? undefined)
   }
 
   /** 戦闘をやめて じゅんび に戻る */
   const quit = () => {
+    if (session && !session.result.is_finished && session.result.turn > 0) {
+      record([makeRecord(session.save, session.result, session.log, 'quit')])
+    }
     gameRef.current?.endBattle()
+    setAutoRun(null)
     setSession(null)
+  }
+
+  /** せんとうの きろくを作る */
+  const makeRecord = (
+    hero: SaveData,
+    result: BattleTurnResult,
+    log: LogLine[],
+    outcome: BattleOutcome = outcomeOf(result),
+  ): BattleRecord => ({
+    id: newRecordId(),
+    at: new Date().toISOString(),
+    hero: formatName(hero.name) || 'ゆうしゃ',
+    monster: monsterLabel({ id: result.monster_id, name: result.monster_name }, master.monsters),
+    outcome,
+    turns: result.turn,
+    log,
+  })
+
+  const record = (records: BattleRecord[]) => {
+    if (records.length === 0) return
+    setHistory((prev) => {
+      const next = addRecords(prev, records)
+      storeHistory(next)
+      return next
+    })
+  }
+
+  const clearHistory = () => {
+    setHistory([])
+    storeHistory([])
+  }
+
+  const changeGainRewards = (gain: boolean) => {
+    setGainRewards(gain)
+    storeGainRewards(gain)
+  }
+
+  const changeAutoSetting = (next: AutoBattleSetting) => {
+    setAutoSetting(next)
+    storeAutoBattle(next)
   }
 
   /** ゆうしゃの じゅもんを書きかえて、えらんだ元（いまの じょうたい／スロット）に保存する */
@@ -166,8 +353,8 @@ export function BattlePage() {
       next = { ...next, herbs: next.herbs - 1 }
     }
 
-    // 勝ったら けいけんち・ゴールドを足す
-    if (result.monster_defeated && !rewarded) {
+    // 勝ったら けいけんち・ゴールドを足す（たさない せっていなら そのまま）
+    if (result.monster_defeated && !rewarded && gainRewards) {
       rewarded = true
       const before = next
       next = applyRewards(next, parseRewards(lines.map((line) => line.text)))
@@ -177,13 +364,43 @@ export function BattlePage() {
     }
 
     if (next !== session.save) saveHero(session.sourceId, next)
-    setSession({ ...session, save: next, rewarded, result, log: [...session.log, ...lines] })
+    const log = [...session.log, ...lines]
+    if (result.is_finished) record([makeRecord(session.save, result, log)])
+    setSession({ ...session, save: next, rewarded, result, log })
   }
+
+  // オート：メッセージを出しきったら「たたかう」、決着したら 次のせんとうへ
+  const busy = visible < total
+  useEffect(() => {
+    if (!autoRun || !session || !introDone || busy) return
+    const { result } = session
+    if (!result.is_finished) {
+      const id = setTimeout(() => command('attack'), AUTO_TURN_DELAY_MS)
+      return () => clearTimeout(id)
+    }
+    const id = setTimeout(() => {
+      const wins = autoRun.wins + (result.monster_defeated ? 1 : 0)
+      const losses = autoRun.losses + (result.player_survived ? 0 : 1)
+      const stopped = !result.player_survived && autoRun.stopOnLoss
+      if (stopped || autoRun.count >= autoRun.total) {
+        // おわり：けっかを メッセージに足して とめる
+        const text = stopped
+          ? `オート ちゅうし（${autoRun.count}せんめで まけた）`
+          : `オート おわり（${autoRun.total}せん ${wins}しょう${losses > 0 ? ` ${losses}はい` : ''}）`
+        setSession({ ...session, log: [...session.log, { turn: result.turn, text: '' }, { turn: result.turn, text }] })
+        setAutoRun(null)
+        return
+      }
+      setAutoRun({ ...autoRun, count: autoRun.count + 1, wins, losses })
+      startBattle(session)
+    }, AUTO_NEXT_BATTLE_DELAY_MS)
+    return () => clearTimeout(id)
+  })
 
   const playerSummary = `${formatName(save.name) || '（なまえなし）'}・けいけんち ${save.experience.toLocaleString('ja-JP')}`
   const result = session && withRewards(session, levelOf(session.save.experience, master.statusTable))
   const summary = result?.player_state.summary
-  const inBattle = !!result && !result.is_finished
+  const inBattle = (!!result && !result.is_finished) || !!autoRun
 
   return (
     // タブレット以下では 戦闘中は じゅんび を隠す（CSS で切り替える）
@@ -199,6 +416,10 @@ export function BattlePage() {
           onMonsterChange={changeMonster}
           place={place}
           onPlaceChange={setPlace}
+          gainRewards={gainRewards}
+          onGainRewardsChange={changeGainRewards}
+          auto={autoSetting}
+          onAutoChange={changeAutoSetting}
           inBattle={inBattle}
           onStart={start}
         />
@@ -221,8 +442,11 @@ export function BattlePage() {
               spells={spellOptions(summary.level, summary.mp, master.spells)}
               items={itemOptions(session.save.herbs, session.save.keys, result.player_state.items, master.items)}
               onCommand={command}
-              onRestart={start}
+              onRestart={restart}
+              auto={autoRun}
+              onStopAuto={() => setAutoRun(null)}
               onQuit={quit}
+              onOpenLog={() => setLogOpen(true)}
             />
           </Window>
         ) : (
@@ -230,10 +454,36 @@ export function BattlePage() {
             <div className={styles.placeholder}>
               <Swords size={28} />
               <p>ゆうしゃ と モンスター を えらんで「たたかう」を おしてください。</p>
+              {history.length > 0 && (
+                <button type="button" data-variant="ghost" onClick={() => setLogOpen(true)}>
+                  <ScrollText size={15} />
+                  せんとうの きろく（{history.length}けん）
+                </button>
+              )}
             </div>
           </Window>
         )}
       </div>
+
+      {logOpen && (
+        <BattleLogDialog
+          history={history}
+          current={
+            session && !session.result.is_finished
+              ? {
+                  hero: formatName(session.save.name) || 'ゆうしゃ',
+                  monster: monsterLabel(
+                    { id: session.result.monster_id, name: session.result.monster_name },
+                    master.monsters,
+                  ),
+                  log: session.log,
+                }
+              : null
+          }
+          onClear={clearHistory}
+          onClose={() => setLogOpen(false)}
+        />
+      )}
     </div>
   )
 }

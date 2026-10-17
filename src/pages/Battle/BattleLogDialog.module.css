@@ -1,0 +1,130 @@
+.dialog {
+  width: min(720px, calc(100vw - 24px));
+  max-width: none;
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  padding: 0;
+  overflow: visible auto;
+  border: none;
+  background: transparent;
+  color: var(--color-fg);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 75%);
+  backdrop-filter: blur(4px);
+}
+
+/* 枠上のタイトルが切れないよう 上をあける */
+.window {
+  margin: 14px 0 2px;
+}
+
+.count {
+  margin-right: auto;
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  align-self: center;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.record {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-input);
+}
+
+.record > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.record > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* 開いているかが わかるよう ▶ を回す */
+.record > summary::before {
+  content: '▶';
+  color: var(--color-muted);
+  font-size: 0.625rem;
+  transition: transform 0.15s;
+}
+
+.record[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.badge {
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--color-hover);
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+
+.badge[data-outcome='win'] {
+  background: rgb(76 195 138 / 14%);
+  color: var(--color-success);
+}
+
+.badge[data-outcome='lose'] {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.badge[data-outcome='current'] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.monster {
+  font-weight: 600;
+}
+
+.meta {
+  margin-left: auto;
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* メッセージは せんとう画面と おなじ 黒地・白文字 */
+.lines {
+  margin: 0 8px 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: #000;
+  color: #fcfcfc;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.lines p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.turnStart {
+  margin-top: 8px !important;
+  padding-top: 8px;
+  border-top: 1px dashed rgb(255 255 255 / 18%);
+}
+
+.empty {
+  margin: 0;
+  padding: 24px 0;
+  color: var(--color-muted);
+  text-align: center;
+}

@@ -254,12 +254,17 @@
   white-space: nowrap;
 }
 
-.quit {
+/* ログ・やめる（右はしに よせる） */
+.hudButtonFirst,
+.hudButton {
   gap: 4px;
   height: 1.25rem;
-  margin-left: auto;
   padding: 0 6px;
   font-size: var(--font-size-xs);
+}
+
+.hudButtonFirst {
+  margin-left: auto;
 }
 
 @keyframes blink {

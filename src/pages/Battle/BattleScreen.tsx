@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
-import { X } from 'lucide-react'
+import { ScrollText, X } from 'lucide-react'
 import { formatName } from '../../features/jumon/kana'
 import type { CommandOption } from '../../features/battle/commands'
 import { revealLength, revealLines } from '../../features/battle/reveal'
@@ -36,6 +36,12 @@ interface Props {
   onRestart: () => void
   /** 戦闘をやめる */
   onQuit: () => void
+  /** せんとうの きろくを ひらく */
+  onOpenLog: () => void
+  /** オートせんとう中なら その進みぐあい */
+  auto: { count: number; total: number } | null
+  /** オートを とめる（いまの せんとうは 手動で つづける） */
+  onStopAuto: () => void
 }
 
 /** ゲーム画面（256 × 240）の上の位置と大きさ */
@@ -121,6 +127,9 @@ export function BattleScreen({
   onCommand,
   onRestart,
   onQuit,
+  onOpenLog,
+  auto,
+  onStopAuto,
 }: Props) {
   const { getMasterData, getEnemySpriteImage, getBattleBackgroundImage } = useDamdara()
   const { fieldBackground, backdropColor, enemySprites } = getMasterData()
@@ -195,7 +204,11 @@ export function BattleScreen({
   // いま出しているメニュー（メッセージ表示中は出さない）
   let menuTitle = 'コマンド'
   let menuItems: MenuItem[] = []
-  if (!busy && introDone) {
+  if (auto && introDone) {
+    // オート中は「とめる」だけ（メッセージの とちゅうでも とめられる）
+    menuTitle = `オート ${auto.count}/${auto.total}`
+    menuItems = [{ key: 'stop', label: 'とめる', run: onStopAuto }]
+  } else if (!busy && introDone) {
     if (finished) {
       menuTitle = 'おわり'
       menuItems = [{ key: 'restart', label: 'もういちど たたかう', run: onRestart }]
@@ -276,7 +289,7 @@ export function BattleScreen({
     menuItems.length > 0 ? (
       <RetroWindow
         title={menuTitle}
-        box={menu === 'main' || finished || result.player_sleep ? LAYOUT.command : LAYOUT.subMenu}
+        box={auto || menu === 'main' || finished || result.player_sleep ? LAYOUT.command : LAYOUT.subMenu}
       >
         <div className={isGrid ? styles.menuGrid : styles.menuList} role="menu" aria-label={menuTitle}>
           {menuItems.map((item, i) => (
@@ -308,7 +321,7 @@ export function BattleScreen({
 
   return (
     <div className={styles.frame}>
-      <MonsterHud result={result} label={monsterLabel} maxHp={monsterMaxHp} onQuit={onQuit} />
+      <MonsterHud result={result} label={monsterLabel} maxHp={monsterMaxHp} onQuit={onQuit} onOpenLog={onOpenLog} />
 
       <div className={styles.stageWrap}>
         <div
@@ -372,7 +385,7 @@ export function BattleScreen({
                   {revealLines(texts, shown).map((text, i) => (
                     <p key={i}>{text || ' '}</p>
                   ))}
-                  {!busy && !finished && <p>コマンド？</p>}
+                  {!busy && !finished && !auto && <p>コマンド？</p>}
                 </div>
                 {busy && <span className={styles.more}>▼</span>}
               </RetroWindow>
@@ -393,11 +406,13 @@ function MonsterHud({
   label,
   maxHp,
   onQuit,
+  onOpenLog,
 }: {
   result: BattleTurnResult
   label: string
   maxHp: number
   onQuit: () => void
+  onOpenLog: () => void
 }) {
   const rate = maxHp > 0 ? result.monster_hp / maxHp : 0
   const chips = [
@@ -429,7 +444,11 @@ function MonsterHud({
           {chip}
         </span>
       ))}
-      <button type="button" data-variant="ghost" className={styles.quit} onClick={onQuit}>
+      <button type="button" data-variant="ghost" className={styles.hudButtonFirst} onClick={onOpenLog}>
+        <ScrollText size={12} />
+        ログ
+      </button>
+      <button type="button" data-variant="ghost" className={styles.hudButton} onClick={onQuit}>
         <X size={12} />
         やめる
       </button>
