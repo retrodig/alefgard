@@ -1,0 +1,136 @@
+/* ===== 設定ページ ===== */
+
+.pageHeader {
+  margin-top: 20px;
+}
+
+.pageTitle {
+  font-size: 1.5rem;
+}
+
+.pageDescription {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+
+.content {
+  max-width: 720px;
+}
+
+.current {
+  margin: 0 0 12px;
+  font-size: var(--font-size-sm);
+}
+
+.current strong {
+  color: var(--color-accent);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* ===== セーブスロット ===== */
+
+.slots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.slot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-input);
+}
+
+.slot[data-current='true'] {
+  border-color: rgb(245 185 66 / 45%);
+}
+
+.slotInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.slotNumber {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 50%;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.slot[data-current='true'] .slotNumber {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.slotDetail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.slotName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.slotBadge {
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: 0.6875rem;
+  font-weight: normal;
+}
+
+.slotMeta,
+.slotEmpty {
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.slotActions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.slotActions button {
+  height: 2rem;
+  padding: 0 10px;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

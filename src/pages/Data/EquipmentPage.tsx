@@ -44,15 +44,38 @@ export function EquipmentPage() {
   const { weapons, armors, shields } = useDamdara().getMasterData()
   return (
     <>
-      <Window title="ぶき">
-        <DataTable caption="ぶき一覧" rows={withoutNone(weapons)} columns={WEAPON_COLUMNS} rowKey={(e) => e.id} />
-      </Window>
-      <Window title="よろい">
-        <DataTable caption="よろい一覧" rows={withoutNone(armors)} columns={DEFENSE_COLUMNS} rowKey={(e) => e.id} />
-      </Window>
-      <Window title="たて">
-        <DataTable caption="たて一覧" rows={withoutNone(shields)} columns={DEFENSE_COLUMNS} rowKey={(e) => e.id} />
-      </Window>
+      <div className={styles.columns3}>
+        <Window title="ぶき" flush>
+          <DataTable
+            caption="ぶき一覧"
+            rows={withoutNone(weapons)}
+            columns={WEAPON_COLUMNS}
+            rowKey={(e) => e.id}
+            compact
+            sortable={false}
+          />
+        </Window>
+        <Window title="よろい" flush>
+          <DataTable
+            caption="よろい一覧"
+            rows={withoutNone(armors)}
+            columns={DEFENSE_COLUMNS}
+            rowKey={(e) => e.id}
+            compact
+            sortable={false}
+          />
+        </Window>
+        <Window title="たて" flush>
+          <DataTable
+            caption="たて一覧"
+            rows={withoutNone(shields)}
+            columns={DEFENSE_COLUMNS}
+            rowKey={(e) => e.id}
+            compact
+            sortable={false}
+          />
+        </Window>
+      </div>
       <p className={styles.note}>「－」は店で買えない・売れないもの。</p>
     </>
   )

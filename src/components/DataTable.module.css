@@ -28,6 +28,25 @@
   border-radius: var(--radius-md);
 }
 
+/* 枠いっぱいのウィンドウ内では、表の枠線をなくして端まで広げる */
+[data-flush] .scroll {
+  border: none;
+  border-radius: 0;
+}
+
+[data-flush] .search {
+  margin: 0 16px;
+}
+
+/* 見出し行の背景帯はなくし、行の区切り線だけ残す */
+[data-flush] .table th {
+  background: transparent;
+}
+
+[data-flush] .caption {
+  border-bottom: none;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -91,6 +110,32 @@ th[aria-sort] .sortButton {
 .sortMark {
   display: inline-flex;
   opacity: 0.7;
+}
+
+/* 詰めた表示：余白と文字を小さくし、並べ替え中でない列の矢印は隠す */
+.compact {
+  font-size: var(--font-size-sm);
+}
+
+.compact caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.table.compact th,
+.table.compact td {
+  padding: 8px 7px;
+}
+
+.compact th:not([aria-sort]) .sortMark {
+  display: none;
+}
+
+.compact th:not([aria-sort]):hover .sortMark {
+  display: inline-flex;
 }
 
 .table .wrap {

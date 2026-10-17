@@ -13,7 +13,7 @@ const COLUMNS: Column<SpellData>[] = [
 export function SpellsPage() {
   const { spells } = useDamdara().getMasterData()
   return (
-    <Window title="じゅもん">
+    <Window title="じゅもん" flush>
       <DataTable caption="じゅもん一覧" rows={spells} columns={COLUMNS} rowKey={(s) => s.id} />
     </Window>
   )

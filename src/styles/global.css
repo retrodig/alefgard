@@ -137,6 +137,13 @@ button[data-variant='ghost']:hover:not(:disabled) {
   color: var(--color-fg);
 }
 
+button[data-variant='danger'],
+button[data-variant='danger']:hover:not(:disabled) {
+  border-color: rgb(242 112 95 / 50%);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
 /* ===== 入力欄 ===== */
 
 input,

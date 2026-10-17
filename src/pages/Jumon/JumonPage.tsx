@@ -5,6 +5,7 @@ import { CopyButton } from '../../components/CopyButton'
 import { Window } from '../../components/Window'
 import { normalizePassword } from '../../features/jumon/kana'
 import { decodePassword, DEFAULT_SAVE, encodePassword, type SaveData } from '../../features/jumon/password'
+import { loadStoredPassword, storePassword } from '../../features/jumon/storage'
 import { useDamdara } from '../../wasm/useDamdara'
 import { PasswordForm } from './PasswordForm'
 import { RetroDialog } from './RetroDialog'
@@ -16,11 +17,14 @@ function buildShareUrl(password: string): string {
   return `${location.origin}${location.pathname}#/jumon?p=${encodeURIComponent(password)}`
 }
 
-/** URL の p を読み、正しいじゅもんならそのパラメータ、なければ初期値を返す */
+/**
+ * 表示するパラメータを決める。
+ * URL の p（共有リンク）を優先し、なければブラウザに保存した前回の状態、それもなければ初期値。
+ */
 function saveFromParam(param: string | null): SaveData {
-  const value = normalizePassword(param ?? '').value
+  const value = param ? normalizePassword(param).value : loadStoredPassword()
   try {
-    return decodePassword(value).save
+    return value ? decodePassword(value).save : DEFAULT_SAVE
   } catch {
     return DEFAULT_SAVE
   }
@@ -48,6 +52,11 @@ export function JumonPage() {
   useEffect(() => {
     if (searchParams.get('p') !== password) setSearchParams({ p: password }, { replace: true })
   }, [password, searchParams, setSearchParams])
+
+  // 変更のたびにブラウザへ保存し、次に開いたときに続きから始められるようにする
+  useEffect(() => {
+    storePassword(password)
+  }, [password])
 
   // ステータス（なまえによる補正込み）は damdara に計算させる
   const player = useMemo(() => {

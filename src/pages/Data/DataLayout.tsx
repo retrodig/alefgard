@@ -13,10 +13,6 @@ const TABS: { to: string; label: string; icon: LucideIcon }[] = [
 export function DataLayout() {
   return (
     <>
-      <header className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>データ</h1>
-        <p className={styles.pageDescription}>モンスター・そうび・どうぐ・じゅもん・レベルの一覧。見出しで並べ替えできます。</p>
-      </header>
       <nav aria-label="データの種類" className={styles.tabs}>
         {TABS.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} className={({ isActive }) => (isActive ? styles.tabActive : styles.tab)}>

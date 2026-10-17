@@ -23,7 +23,7 @@ export function ItemsPage() {
   const { items } = useDamdara().getMasterData()
   return (
     <>
-      <Window title="どうぐ">
+      <Window title="どうぐ" flush>
         <DataTable
           caption="どうぐ一覧"
           rows={items.filter((i) => i.name !== 'なし')}

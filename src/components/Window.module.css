@@ -23,6 +23,15 @@
   transform: translateX(-50%);
 }
 
+.window[data-flush] {
+  padding: 8px 2px 6px;
+}
+
+/* 検索欄などがある場合は、枠上のタイトルと重ならないよう上に余白をとる */
+.window[data-flush]:has(input[type='search']) {
+  padding-top: 24px;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

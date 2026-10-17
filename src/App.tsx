@@ -10,6 +10,7 @@ import { SpellsPage } from './pages/Data/SpellsPage'
 import { Home } from './pages/Home'
 import { JumonPage } from './pages/Jumon/JumonPage'
 import { NotFound } from './pages/NotFound'
+import { SettingsPage } from './pages/Settings/SettingsPage'
 
 // GitHub Pages で直リンク・リロードが確実に動くよう HashRouter を使う
 const router = createHashRouter([
@@ -32,6 +33,7 @@ const router = createHashRouter([
           { path: 'levels', element: <LevelsPage /> },
         ],
       },
+      { path: 'settings', element: <SettingsPage /> },
       { path: '*', element: <NotFound /> },
     ],
   },

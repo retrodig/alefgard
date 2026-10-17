@@ -8,6 +8,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ScrollText,
+  Settings,
   Swords,
   X,
   type LucideIcon,
@@ -23,6 +24,7 @@ const NAV_ITEMS: { to: string; label: string; icon: LucideIcon; end?: boolean }[
   { to: '/battle', label: 'せんとう', icon: Swords },
   { to: '/world', label: 'せかい', icon: Map },
   { to: '/data', label: 'データ', icon: Database },
+  { to: '/settings', label: 'せってい', icon: Settings },
 ]
 
 const COLLAPSED_KEY = 'alefgard:sidebar-collapsed'

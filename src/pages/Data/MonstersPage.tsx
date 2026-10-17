@@ -16,7 +16,7 @@ const COLUMNS: Column<MonsterData>[] = [
 export function MonstersPage() {
   const { monsters } = useDamdara().getMasterData()
   return (
-    <Window title="モンスター">
+    <Window title="モンスター" flush>
       <DataTable caption="モンスター一覧" rows={monsters} columns={COLUMNS} rowKey={(m) => m.id} searchText={(m) => m.name} />
     </Window>
   )
