@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { DEFAULT_SAVE, encodePassword } from '../../features/jumon/password'
 import { loadStoredPassword, storePassword } from '../../features/jumon/storage'
 import { useDamdara } from '../../wasm/useDamdara'
+import { MessageSpeedSetting } from './MessageSpeedSetting'
 import { SaveSlots } from './SaveSlots'
 import styles from './Settings.module.css'
 
@@ -21,10 +22,11 @@ export function SettingsPage() {
     <>
       <header className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>せってい</h1>
-        <p className={styles.pageDescription}>セーブスロットの かんり</p>
+        <p className={styles.pageDescription}>セーブスロットの かんり・せんとうの せってい</p>
       </header>
       <div className={styles.content}>
         <SaveSlots password={password} statusTable={getMasterData().statusTable} onLoad={load} />
+        <MessageSpeedSetting />
       </div>
     </>
   )

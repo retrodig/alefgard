@@ -4,6 +4,7 @@ import { SpriteViewer } from '../../components/SpriteViewer'
 import { Window } from '../../components/Window'
 import { monsterLabel } from '../../data/monsters'
 import type { MonsterData } from '../../wasm/types'
+import type { BattlePlace } from './BattleScreen'
 import styles from './Battle.module.css'
 
 export interface PlayerSource {
@@ -21,6 +22,8 @@ interface Props {
   monsters: MonsterData[]
   monsterId: number
   onMonsterChange: (id: number) => void
+  place: BattlePlace
+  onPlaceChange: (place: BattlePlace) => void
   inBattle: boolean
   onStart: () => void
 }
@@ -34,6 +37,8 @@ export function BattleSetup({
   monsters,
   monsterId,
   onMonsterChange,
+  place,
+  onPlaceChange,
   inBattle,
   onStart,
 }: Props) {
@@ -96,6 +101,14 @@ export function BattleSetup({
               </dl>
             </div>
           )}
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor={`${ids}-place`}>ばしょ</label>
+          <select id={`${ids}-place`} value={place} onChange={(e) => onPlaceChange(e.target.value as BattlePlace)}>
+            <option value="field">フィールド（はいけい あり）</option>
+            <option value="dungeon">どうくつ・おしろ（はいけい なし）</option>
+          </select>
         </div>
 
         <button type="button" data-variant="primary" className={styles.startButton} onClick={onStart}>

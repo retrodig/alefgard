@@ -1,0 +1,276 @@
+/*
+ * ファミコン版の せんとう画面を再現する。
+ * 中の要素は ゲーム画面（256 × 240）の座標で置き、--u（ゲームの 1 ドット）で拡大する。
+ * 何も描かない上下（コマンドより上・メッセージより下）は切り落とし、y 10〜228 だけを見せる。
+ */
+
+.frame {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 画面の高さに収まる大きさにする（狭すぎるときは 300px まで） */
+.stageWrap {
+  container-type: inline-size;
+  width: min(100%, max(300px, calc((100dvh - 240px) * 256 / 218)));
+  margin: 0 auto;
+}
+
+.stage {
+  --u: calc(100cqw / 256);
+  --retro-fg: #fcfcfc;
+  --retro-dim: #7c7c7c;
+  position: relative;
+  aspect-ratio: 256 / 218;
+  overflow: hidden;
+  border-radius: 8px;
+  color: var(--retro-fg);
+  font-size: calc(var(--u) * 8);
+  line-height: calc(var(--u) * 16);
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  user-select: none;
+}
+
+/* ゲーム画面全体。切り落とす分だけ上にずらす */
+.scene {
+  position: absolute;
+  top: calc(var(--u) * -10);
+  left: 0;
+  width: 100%;
+  height: calc(var(--u) * 240);
+}
+
+.stage:focus-visible {
+  box-shadow: none;
+}
+
+.pixels {
+  position: absolute;
+  image-rendering: pixelated;
+}
+
+/* たおす・にげると消えていく */
+.monster {
+  transition: opacity 0.6s;
+}
+
+.monsterGone {
+  opacity: 0;
+}
+
+/* ===== ウィンドウ（白枠・黒地・タイトルは枠の上） ===== */
+
+.window {
+  position: absolute;
+  padding: calc(var(--u) * 7) calc(var(--u) * 6);
+  border: calc(var(--u) * 2) solid var(--retro-fg);
+  border-radius: calc(var(--u) * 3);
+  background: #000;
+}
+
+.windowTitle {
+  position: absolute;
+  top: calc(var(--u) * -9);
+  left: 50%;
+  padding: 0 calc(var(--u) * 2);
+  background: #000;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+/* ゆうしゃ */
+.status {
+  margin: 0;
+}
+
+.status > div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.status dd {
+  margin: 0;
+}
+
+.danger {
+  color: #f87858;
+}
+
+/* ===== コマンド ===== */
+
+.menuGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.menuList {
+  display: flex;
+  flex-direction: column;
+}
+
+.menuItem,
+.menuItem:hover:not(:disabled) {
+  justify-content: flex-start;
+  gap: 0;
+  height: calc(var(--u) * 16);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.menuItem:focus-visible {
+  box-shadow: none;
+}
+
+/* ▶ カーソル（点滅） */
+.menuItem::before {
+  content: '▶';
+  flex: none;
+  width: calc(var(--u) * 8);
+  font-size: 0.75em;
+  visibility: hidden;
+}
+
+.menuItem[data-cursor]::before {
+  visibility: visible;
+  animation: blink 0.9s steps(1) infinite;
+}
+
+.menuItem[aria-disabled] {
+  color: var(--retro-dim);
+  cursor: not-allowed;
+}
+
+.menuLabel {
+  white-space: nowrap;
+}
+
+.menuDetail {
+  margin-left: auto;
+  color: var(--retro-dim);
+  font-size: 0.75em;
+}
+
+/* ===== メッセージ ===== */
+
+.log {
+  height: calc(var(--u) * 64);
+  padding: 0 calc(var(--u) * 2);
+  overflow-y: auto;
+  scrollbar-width: none;
+  cursor: pointer;
+}
+
+.log::-webkit-scrollbar {
+  display: none;
+}
+
+.log p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.more {
+  position: absolute;
+  bottom: calc(var(--u) * -2);
+  left: 50%;
+  font-size: 0.75em;
+  line-height: 1;
+  transform: translateX(-50%);
+  animation: blink 0.9s steps(1) infinite;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ===== 画面の上の HP ゲージ ===== */
+
+.hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  width: min(100%, max(300px, calc((100dvh - 240px) * 256 / 218)));
+  margin: 0 auto;
+  font-size: var(--font-size-xs);
+  line-height: 1.25rem;
+}
+
+.hudName {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hpBar {
+  flex: 1 1 80px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-hover);
+}
+
+.hpBar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-success);
+  transition: width 0.3s;
+}
+
+.hpBar > span[data-low] {
+  background: var(--color-danger);
+}
+
+.hudHp {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hudHp small {
+  color: var(--color-muted);
+  font-size: inherit;
+  font-weight: normal;
+}
+
+.chip {
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+
+.quit {
+  gap: 4px;
+  height: 1.25rem;
+  margin-left: auto;
+  padding: 0 6px;
+  font-size: var(--font-size-xs);
+}
+
+@keyframes blink {
+  50% {
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menuItem[data-cursor]::before,
+  .more {
+    animation: none;
+  }
+}

@@ -35,3 +35,24 @@ export function cleanBattleMessages(raw: string[]): string[] {
   while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop()
   return lines
 }
+
+export interface BattleRewards {
+  exp: number
+  gold: number
+}
+
+/**
+ * 整えたメッセージから、勝ったときの けいけんち・ゴールドを読み取る。
+ * damdara はターン制の戦闘で勝っても player_state に加算しないため、表示側で足す。
+ */
+export function parseRewards(lines: string[]): BattleRewards {
+  let exp = 0
+  let gold = 0
+  for (const line of lines) {
+    const e = /けいけんち (\d+)ポイント/.exec(line)
+    if (e) exp += Number(e[1])
+    const g = /(\d+)ゴールドを てにいれた/.exec(line)
+    if (g) gold += Number(g[1])
+  }
+  return { exp, gold }
+}

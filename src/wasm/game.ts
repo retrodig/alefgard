@@ -1,6 +1,7 @@
 import type { WasmGame } from 'damdara'
 import type {
   BattleAction,
+  BattleBackgroundData,
   BattleResult,
   BattleStep,
   BattleTurnResult,
@@ -92,6 +93,26 @@ export class DamdaraGame {
   /** 敵スプライトの RGBA（width * height * 4 バイト） */
   getEnemySpriteRgba(id: number): Uint8Array {
     return call(() => this.game.get_enemy_sprite_rgba(id))
+  }
+
+  /** せんとうの はいけい。はいけいの無いマップでは null */
+  getBattleBackground(mapId: number): BattleBackgroundData | null {
+    return call(() => this.game.get_battle_background(mapId) ?? null)
+  }
+
+  /** はいけいの RGBA（112 * 112 * 4 バイト）。revealBlocks を渡すと そのブロック数だけ描く（出現アニメーション用） */
+  getBattleBackgroundRgba(mapId: number, revealBlocks?: number): Uint8Array {
+    return call(() => this.game.get_battle_background_rgba(mapId, revealBlocks ?? null))
+  }
+
+  /** はいけいの無いせんとうで塗りつぶす色（NES の色番号） */
+  getBattleBackdrop(): number {
+    return this.game.get_battle_backdrop()
+  }
+
+  /** NES の色番号 → [r, g, b] */
+  getNesPalette(): [number, number, number][] {
+    return call(() => this.game.get_nes_palette())
   }
 
   getMonsters(): MonsterData[] {

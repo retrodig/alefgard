@@ -4,6 +4,7 @@ import { ConfirmButton } from '../../components/ConfirmButton'
 import { Window } from '../../components/Window'
 import { formatName } from '../../features/jumon/kana'
 import { decodePassword } from '../../features/jumon/password'
+import { levelOf } from '../../features/battle/rewards'
 import { loadSlots, storeSlots, type Slots } from '../../features/jumon/storage'
 import type { StatusData } from '../../wasm/types'
 import styles from './Settings.module.css'
@@ -21,10 +22,6 @@ const dateFormat = new Intl.DateTimeFormat('ja-JP', {
   hour: '2-digit',
   minute: '2-digit',
 })
-
-function levelOf(experience: number, statusTable: StatusData[]): number {
-  return statusTable.reduce((lv, s) => (experience >= s.required_exp ? s.level : lv), 1)
-}
 
 /** 3 つのセーブスロットへの かきこみ・よみこみ・けす */
 export function SaveSlots({ password, statusTable, onLoad }: Props) {

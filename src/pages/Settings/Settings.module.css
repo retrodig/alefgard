@@ -33,6 +33,61 @@
   font-size: var(--font-size-xs);
 }
 
+/* ===== メッセージの はやさ ===== */
+
+/* せまい画面では 2 れつに折り返す */
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5em, 1fr));
+  gap: 4px;
+  margin: 0 0 10px;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-input);
+}
+
+.segment {
+  position: relative;
+  cursor: pointer;
+}
+
+/* ラジオボタンは見えなくして、ラベル全体をボタンのように見せる */
+.segment input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.segment span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.segment:hover span {
+  color: var(--color-fg);
+}
+
+.segment input:checked + span {
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+  font-weight: 600;
+}
+
+.segment input:focus-visible + span {
+  box-shadow: var(--focus-ring);
+}
+
 /* ===== セーブスロット ===== */
 
 .slots {

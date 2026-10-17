@@ -1,42 +1,79 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Swords } from 'lucide-react'
 import { Window } from '../../components/Window'
 import { monsterLabel } from '../../data/monsters'
 import { itemOptions, spellOptions } from '../../features/battle/commands'
-import { cleanBattleMessages } from '../../features/battle/messages'
+import { cleanBattleMessages, parseRewards } from '../../features/battle/messages'
+import { nextReveal, revealLength, speedOption } from '../../features/battle/reveal'
+import { applyRewards, levelOf } from '../../features/battle/rewards'
+import { loadLastMonster, loadMessageSpeed, storeLastMonster } from '../../features/battle/storage'
 import { formatName } from '../../features/jumon/kana'
-import { decodePassword, DEFAULT_SAVE, encodePassword } from '../../features/jumon/password'
-import { loadSlots, loadStoredPassword } from '../../features/jumon/storage'
+import { decodePassword, DEFAULT_SAVE, encodePassword, type SaveData } from '../../features/jumon/password'
+import { loadSlots, loadStoredPassword, storePassword, storeSlots } from '../../features/jumon/storage'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 import type { DamdaraGame } from '../../wasm/game'
 import type { BattleAction, BattleTurnResult } from '../../wasm/types'
 import { useDamdara } from '../../wasm/useDamdara'
-import { BattleScreen, type LogLine } from './BattleScreen'
+import { BattleScreen, type BattlePlace, type LogLine } from './BattleScreen'
 import { BattleSetup, type PlayerSource } from './BattleSetup'
-import { CommandWindow } from './CommandWindow'
 import styles from './Battle.module.css'
 
-/** メッセージを 1 行ずつ表示する間隔 */
-const LINE_INTERVAL_MS = 70
-
 interface Session {
+  /** たたかうたびに増やし、画面を作り直す */
+  id: number
+  place: BattlePlace
+  /** たたかっている ゆうしゃ（やくそうを使ったとき・勝ったときに この じゅもんを書きかえる） */
+  sourceId: string
+  /**
+   * いまの ゆうしゃ（書きかえたあとの状態）。
+   * やくそうの残りは damdara の結果に含まれないので、ここで数える
+   */
+  save: SaveData
+  /** 勝って けいけんち・ゴールドを足した */
+  rewarded: boolean
   result: BattleTurnResult
   log: LogLine[]
-  /** やくそう・かぎの残り（damdara の結果には含まれないので こちらで数える） */
-  herbs: number
-  keys: number
 }
+
+const SLOT_PREFIX = 'slot-'
 
 function loadSources(): PlayerSource[] {
   const current = loadStoredPassword() ?? encodePassword(DEFAULT_SAVE)
   const slots = loadSlots().flatMap((slot, i) =>
-    slot ? [{ id: `slot-${i}`, label: `スロット ${i + 1}`, password: slot.password }] : [],
+    slot ? [{ id: `${SLOT_PREFIX}${i}`, label: `スロット ${i + 1}`, password: slot.password }] : [],
   )
   return [{ id: 'current', label: 'いまの じょうたい', password: current }, ...slots]
 }
 
+/** ゆうしゃの じゅもんを、えらんだ元（いまの じょうたい／スロット）に書きもどす */
+function storeSource(sourceId: string, password: string): void {
+  if (sourceId === 'current') {
+    storePassword(password)
+    return
+  }
+  const index = Number(sourceId.slice(SLOT_PREFIX.length))
+  const slots = loadSlots()
+  if (!slots[index]) return
+  slots[index] = { password, savedAt: new Date().toISOString() }
+  storeSlots(slots)
+}
+
 function toLog(result: BattleTurnResult): LogLine[] {
   return cleanBattleMessages(result.messages).map((text) => ({ turn: result.turn, text }))
+}
+
+/** damdara は勝っても けいけんち・ゴールドを加算しないので、足したあとの値を表示に使う */
+function withRewards(session: Session, level: number): BattleTurnResult {
+  const { result, rewarded, save } = session
+  if (!rewarded) return result
+  const { summary } = result.player_state
+  return {
+    ...result,
+    player_state: {
+      ...result.player_state,
+      summary: { ...summary, level, experience: save.experience, gold: save.gold },
+    },
+  }
 }
 
 export function BattlePage() {
@@ -44,11 +81,19 @@ export function BattlePage() {
   const master = getMasterData()
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
-  const [sources] = useState(loadSources)
+  const [sources, setSources] = useState(loadSources)
   const [sourceId, setSourceId] = useState('current')
-  const [monsterId, setMonsterId] = useState(0)
+  // さいごに えらんだ モンスター（いまは いない id なら 先頭）
+  const [monsterId, setMonsterId] = useState(() => {
+    const last = loadLastMonster()
+    return master.monsters.some((m) => m.id === last) ? (last as number) : (master.monsters[0]?.id ?? 0)
+  })
+  const [speed] = useState(() => speedOption(loadMessageSpeed()))
+  const [place, setPlace] = useState<BattlePlace>('field')
   const [session, setSession] = useState<Session | null>(null)
   const [shown, setShown] = useState(0)
+  /** はいけいの出現が終わるまで メッセージを出さない */
+  const [introDone, setIntroDone] = useState(false)
   const gameRef = useRef<DamdaraGame | null>(null)
   const screenRef = useRef<HTMLDivElement>(null)
 
@@ -58,14 +103,22 @@ export function BattlePage() {
   // ページを離れたら WASM 側のゲームを解放する
   useEffect(() => () => gameRef.current?.free(), [])
 
-  // メッセージを 1 行ずつ送り表示する（動きを減らす設定なら一度に全部出す）
-  const total = session?.log.length ?? 0
-  const visible = reduceMotion ? total : shown
+  // メッセージを 1 文字ずつ（ちょうはやい なら 1 行ずつ）送り表示する。動きを減らす設定なら一度に全部出す
+  const texts = useMemo(() => session?.log.map((line) => line.text) ?? [], [session?.log])
+  const total = revealLength(texts)
+  const visible = reduceMotion ? total : introDone ? shown : 0
   useEffect(() => {
-    if (reduceMotion || shown >= total) return
-    const id = setTimeout(() => setShown((n) => n + 1), LINE_INTERVAL_MS)
+    if (reduceMotion || !introDone || shown >= total) return
+    const id = setTimeout(() => setShown((n) => nextReveal(texts, n, speed.byLine)), speed.intervalMs)
     return () => clearTimeout(id)
-  }, [shown, total, reduceMotion])
+  }, [shown, total, texts, speed, reduceMotion, introDone])
+
+  const changeMonster = (id: number) => {
+    setMonsterId(id)
+    storeLastMonster(id)
+  }
+
+  const endIntro = useCallback(() => setIntroDone(true), [])
 
   const start = () => {
     gameRef.current?.free()
@@ -73,32 +126,68 @@ export function BattlePage() {
     gameRef.current = game
     game.loadFromPassword(source.password)
     const result = game.startBattle(monsterId)
-    setSession({ result, log: toLog(result), herbs: save.herbs, keys: save.keys })
+    setSession((prev) => ({
+      id: (prev?.id ?? 0) + 1,
+      place,
+      sourceId: source.id,
+      save,
+      rewarded: false,
+      result,
+      log: toLog(result),
+    }))
     setShown(0)
+    setIntroDone(false)
     screenRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
+  /** 戦闘をやめて じゅんび に戻る */
+  const quit = () => {
+    gameRef.current?.endBattle()
+    setSession(null)
+  }
+
+  /** ゆうしゃの じゅもんを書きかえて、えらんだ元（いまの じょうたい／スロット）に保存する */
+  const saveHero = (sourceId: string, next: SaveData) => {
+    const password = encodePassword(next)
+    storeSource(sourceId, password)
+    setSources((prev) => prev.map((s) => (s.id === sourceId ? { ...s, password } : s)))
   }
 
   const command = (action: BattleAction, selection?: number) => {
     const game = gameRef.current
     if (!game || !session) return
-    // やくそうは一覧の先頭（持っているとき）。使うと 1 つ減る
-    const usedHerb = action === 'item' && selection === 1 && session.herbs > 0
     const result = game.battleTurn(action, selection)
-    setSession({
-      result,
-      log: [...session.log, ...toLog(result)],
-      herbs: usedHerb ? session.herbs - 1 : session.herbs,
-      keys: session.keys,
-    })
+    const lines = toLog(result)
+    let next = session.save
+    let rewarded = session.rewarded
+
+    // やくそうは一覧の先頭（持っているとき）。使ったら 1 つ減らす
+    if (action === 'item' && selection === 1 && next.herbs > 0) {
+      next = { ...next, herbs: next.herbs - 1 }
+    }
+
+    // 勝ったら けいけんち・ゴールドを足す
+    if (result.monster_defeated && !rewarded) {
+      rewarded = true
+      const before = next
+      next = applyRewards(next, parseRewards(lines.map((line) => line.text)))
+      if (levelOf(next.experience, master.statusTable) > levelOf(before.experience, master.statusTable)) {
+        lines.push({ turn: result.turn, text: 'レベルが あがった！' })
+      }
+    }
+
+    if (next !== session.save) saveHero(session.sourceId, next)
+    setSession({ ...session, save: next, rewarded, result, log: [...session.log, ...lines] })
   }
 
   const playerSummary = `${formatName(save.name) || '（なまえなし）'}・けいけんち ${save.experience.toLocaleString('ja-JP')}`
-  const busy = visible < total
-  const result = session?.result
+  const result = session && withRewards(session, levelOf(session.save.experience, master.statusTable))
   const summary = result?.player_state.summary
+  const inBattle = !!result && !result.is_finished
 
   return (
-    <div className={styles.page}>
+    // タブレット以下では 戦闘中は じゅんび を隠す（CSS で切り替える）
+    <div className={styles.page} data-in-battle={inBattle || undefined}>
       <div className={styles.areaSetup}>
         <BattleSetup
           sources={sources}
@@ -107,32 +196,35 @@ export function BattlePage() {
           playerSummary={playerSummary}
           monsters={master.monsters}
           monsterId={monsterId}
-          onMonsterChange={setMonsterId}
-          inBattle={!!result && !result.is_finished}
+          onMonsterChange={changeMonster}
+          place={place}
+          onPlaceChange={setPlace}
+          inBattle={inBattle}
           onStart={start}
         />
       </div>
 
       <div ref={screenRef} className={styles.areaScreen}>
         {session && result && summary ? (
-          <BattleScreen
-            result={result}
-            monsterLabel={monsterLabel({ id: result.monster_id, name: result.monster_name }, master.monsters)}
-            monsterMaxHp={master.monsters.find((m) => m.id === result.monster_id)?.hp ?? 0}
-            log={session.log}
-            shown={visible}
-            onSkip={() => setShown(session.log.length)}
-            onRestart={start}
-            commands={
-              <CommandWindow
-                spells={spellOptions(summary.level, summary.mp, master.spells)}
-                items={itemOptions(session.herbs, session.keys, result.player_state.items, master.items)}
-                asleep={result.player_sleep}
-                disabled={busy}
-                onCommand={command}
-              />
-            }
-          />
+          <Window title="せんとう" className={styles.screenWindow}>
+            <BattleScreen
+              key={session.id}
+              result={result}
+              monsterLabel={monsterLabel({ id: result.monster_id, name: result.monster_name }, master.monsters)}
+              monsterMaxHp={master.monsters.find((m) => m.id === result.monster_id)?.hp ?? 0}
+              place={session.place}
+              log={session.log}
+              shown={visible}
+              reduceMotion={reduceMotion}
+              onIntroEnd={endIntro}
+              onSkip={() => setShown(total)}
+              spells={spellOptions(summary.level, summary.mp, master.spells)}
+              items={itemOptions(session.save.herbs, session.save.keys, result.player_state.items, master.items)}
+              onCommand={command}
+              onRestart={start}
+              onQuit={quit}
+            />
+          </Window>
         ) : (
           <Window title="せんとう">
             <div className={styles.placeholder}>

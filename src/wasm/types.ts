@@ -1,4 +1,4 @@
-// damdara 0.10.0 の WASM API が返す値の型（src/wasm.rs の構造体に対応）
+// damdara 1.1.0 の WASM API が返す値の型（src/wasm.rs の構造体に対応）
 
 export interface PlayerSummary {
   name: string
@@ -67,6 +67,16 @@ export interface EnemySpriteSummary {
   width: number
   height: number
   part_count: number
+}
+
+/** せんとうの はいけい（フィールドのみ）。x / y はゲーム画面上の表示位置 */
+export interface BattleBackgroundData {
+  x: number
+  y: number
+  width: number
+  height: number
+  /** 16x16 のブロックを表示していく順番（[列, 行]） */
+  reveal_order: [number, number][]
 }
 
 export interface MonsterData {
