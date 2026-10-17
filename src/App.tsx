@@ -1,5 +1,6 @@
 import { createHashRouter, Navigate, RouterProvider } from 'react-router'
 import { Layout } from './components/Layout'
+import { BattlePage } from './pages/Battle/BattlePage'
 import { ComingSoon } from './pages/ComingSoon'
 import { DataLayout } from './pages/Data/DataLayout'
 import { EquipmentPage } from './pages/Data/EquipmentPage'
@@ -19,7 +20,7 @@ const router = createHashRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'jumon', element: <JumonPage /> },
-      { path: 'battle', element: <ComingSoon title="せんとうシミュレータ" /> },
+      { path: 'battle', element: <BattlePage /> },
       { path: 'world', element: <ComingSoon title="アレフガルドのせかい" /> },
       {
         path: 'data',

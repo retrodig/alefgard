@@ -1,19 +1,17 @@
 import init, { WasmGame } from 'damdara'
 import wasmUrl from 'damdara/damdara_bg.wasm?url'
 import { DamdaraGame } from './game'
-import type { EquipmentData, MonsterData, SpellData, StatusData } from './types'
+import type { EnemySpriteSummary, EquipmentData, MonsterData, SpellData, StatusData } from './types'
 
 let ready: Promise<void> | null = null
 
-/** WASM を一度だけ初期化する。失敗した場合は次回呼び出しで再試行する */
+/**
+ * WASM を一度だけ初期化する。
+ * 失敗した Promise もそのまま保持する（作り直すと React の use() が毎回新しい Promise で
+ * 待ち続けてしまい、エラー画面に進めないため）。再試行はページの再読み込みで行う。
+ */
 export function initDamdara(): Promise<void> {
-  ready ??= init({ module_or_path: wasmUrl }).then(
-    () => undefined,
-    (e: unknown) => {
-      ready = null
-      throw e
-    },
-  )
+  ready ??= init({ module_or_path: wasmUrl }).then(() => undefined)
   return ready
 }
 
@@ -30,6 +28,7 @@ export interface MasterData {
   items: EquipmentData[]
   spells: SpellData[]
   statusTable: StatusData[]
+  enemySprites: EnemySpriteSummary[]
 }
 
 let masterData: MasterData | null = null
@@ -47,10 +46,34 @@ export function getMasterData(): MasterData {
         items: game.getItems(),
         spells: game.getSpells(),
         statusTable: game.getStatusTable(),
+        enemySprites: game.getEnemySprites(),
       }
     } finally {
       game.free()
     }
   }
   return masterData
+}
+
+const spriteImages = new Map<number, ImageData | null>()
+
+/** 敵スプライトを Canvas に描ける ImageData にして返す（モンスターごとにキャッシュ）。無ければ null */
+export function getEnemySpriteImage(id: number): ImageData | null {
+  if (!spriteImages.has(id)) {
+    const summary = getMasterData().enemySprites.find((s) => s.id === id)
+    let image: ImageData | null = null
+    if (summary) {
+      const game = createGame()
+      try {
+        const rgba = game.getEnemySpriteRgba(id)
+        image = new ImageData(new Uint8ClampedArray(rgba), summary.width, summary.height)
+      } catch {
+        image = null
+      } finally {
+        game.free()
+      }
+    }
+    spriteImages.set(id, image)
+  }
+  return spriteImages.get(id) ?? null
 }

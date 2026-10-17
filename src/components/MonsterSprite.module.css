@@ -1,0 +1,17 @@
+/* ドット絵をぼかさずに拡大する */
+.sprite {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.stage {
+  width: 100%;
+  height: auto;
+}
+
+.fitBox {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  vertical-align: middle;
+}

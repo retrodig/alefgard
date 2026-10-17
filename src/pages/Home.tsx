@@ -11,7 +11,7 @@ const SECTIONS: { to: string; title: string; text: string; icon: LucideIcon; rea
     icon: ScrollText,
     ready: true,
   },
-  { to: '/battle', title: 'せんとうシミュレータ', text: 'モンスターとの戦闘を試す', icon: Swords, ready: false },
+  { to: '/battle', title: 'せんとうシミュレータ', text: 'モンスターと 1 ターンずつ たたかう', icon: Swords, ready: true },
   { to: '/world', title: 'アレフガルドのせかい', text: '街・城・ダンジョンの情報と地図', icon: Map, ready: false },
   { to: '/data', title: 'データ', text: 'モンスター・そうび・じゅもん・レベル表', icon: Database, ready: true },
 ]

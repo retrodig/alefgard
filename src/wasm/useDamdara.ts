@@ -1,5 +1,5 @@
 import { use } from 'react'
-import { createGame, getMasterData, initDamdara } from './init'
+import { createGame, getEnemySpriteImage, getMasterData, initDamdara } from './init'
 
 /**
  * WASM の初期化を待つ（Suspense で待機、失敗時は ErrorBoundary へ）。
@@ -7,5 +7,5 @@ import { createGame, getMasterData, initDamdara } from './init'
  */
 export function useDamdara() {
   use(initDamdara())
-  return { createGame, getMasterData }
+  return { createGame, getMasterData, getEnemySpriteImage }
 }

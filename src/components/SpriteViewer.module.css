@@ -1,0 +1,124 @@
+.viewer {
+  position: relative;
+  border-radius: var(--radius-sm);
+  background-color: #000;
+  transition: background-color 0.15s;
+}
+
+.viewport {
+  display: grid;
+  place-items: center;
+  height: 208px;
+  overflow: hidden;
+  border-radius: inherit;
+  touch-action: none;
+  user-select: none;
+}
+
+/* 拡大中は手のひらカーソルでドラッグできる */
+.viewport[data-zoomed] {
+  cursor: grab;
+}
+
+.viewport[data-dragging] {
+  cursor: grabbing;
+}
+
+.content {
+  transform-origin: center;
+  will-change: transform;
+}
+
+.stage {
+  width: 192px;
+}
+
+.toolbar {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: rgb(20 24 33 / 85%);
+  backdrop-filter: blur(4px);
+}
+
+.toolbar button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+.zoomLabel {
+  min-width: 2em;
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* 背景色の選択 */
+/* 絵（下寄りに描かれることが多い）に重ならないよう右上に出す */
+.palette {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: rgb(20 24 33 / 92%);
+  backdrop-filter: blur(4px);
+}
+
+.swatch,
+.swatch:hover:not(:disabled) {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid var(--color-border-strong);
+  border-radius: 50%;
+}
+
+.swatch[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
+}
+
+.customColor {
+  position: relative;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  overflow: hidden;
+  border: 2px solid var(--color-border-strong);
+  border-radius: 50%;
+  background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+  cursor: pointer;
+}
+
+.customColor input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

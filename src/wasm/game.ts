@@ -1,7 +1,10 @@
 import type { WasmGame } from 'damdara'
 import type {
+  BattleAction,
   BattleResult,
   BattleStep,
+  BattleTurnResult,
+  EnemySpriteSummary,
   EquipmentData,
   MonsterData,
   PlayerState,
@@ -61,6 +64,34 @@ export class DamdaraGame {
       }
       return this.game.run_battle(monsterId)
     })
+  }
+
+  /** ターン制の戦闘を始める（turn 0：モンスター出現）。戦闘中なら破棄して始め直す */
+  startBattle(monsterId: number): BattleTurnResult {
+    return call(() => this.game.start_battle(monsterId))
+  }
+
+  /** 1 ターン進める。じゅもん・どうぐのときは selection に 1 始まりの番号を渡す */
+  battleTurn(action: BattleAction, selection?: number): BattleTurnResult {
+    return call(() => this.game.battle_turn(action, selection ?? null))
+  }
+
+  isInBattle(): boolean {
+    return this.game.is_in_battle()
+  }
+
+  /** 戦闘を中断する（プレイヤーの状態は残る） */
+  endBattle(): void {
+    this.game.end_battle()
+  }
+
+  getEnemySprites(): EnemySpriteSummary[] {
+    return call(() => this.game.get_enemy_sprites())
+  }
+
+  /** 敵スプライトの RGBA（width * height * 4 バイト） */
+  getEnemySpriteRgba(id: number): Uint8Array {
+    return call(() => this.game.get_enemy_sprite_rgba(id))
   }
 
   getMonsters(): MonsterData[] {
