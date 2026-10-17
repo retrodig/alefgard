@@ -7,6 +7,7 @@ import type {
   BattleTurnResult,
   CharacterSpriteSummary,
   DialogueData,
+  EncounterData,
   EventResult,
   EventStep,
   EnemySpriteSummary,
@@ -19,6 +20,7 @@ import type {
   StatusData,
   StoryState,
   TalkData,
+  TreasureData,
   WarpData,
 } from './types'
 
@@ -150,6 +152,16 @@ export class DamdaraGame {
     return this.game.npc_character_id(sprite, mapId, afterEnding)
   }
 
+  /** たからばこ・しらべると みつかる もの（mapId を わたすと その マップだけ） */
+  getTreasures(mapId?: number): TreasureData[] {
+    return call(() => this.game.get_treasures(mapId ?? null))
+  }
+
+  /** その ばしょで でてくる まもの・せんとうの かくりつ・かならず でる まもの */
+  getEncounters(mapId: number, x: number, y: number): EncounterData {
+    return call(() => this.game.get_encounters(mapId, x, y))
+  }
+
   getTalks(): TalkData[] {
     return call(() => this.game.get_talks())
   }
@@ -165,6 +177,11 @@ export class DamdaraGame {
   /** イベントの ながれ（ステップの 木）。イベントの ない はなしでは null */
   getEventScript(talkId: number): EventStep[] | null {
     return call(() => this.game.get_event_script(talkId) ?? null)
+  }
+
+  /** ゆうしゃの キャラクター id（ぶき・たて を もっているか、ローラひめを だいているか で かわる） */
+  heroCharacterId(hasWeapon: boolean, hasShield: boolean, withPrincess: boolean): number {
+    return this.game.hero_character_id(hasWeapon, hasShield, withPrincess)
   }
 
   getCharacterSprites(): CharacterSpriteSummary[] {

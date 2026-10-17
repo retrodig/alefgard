@@ -133,7 +133,8 @@ export function Layout() {
       {isMobile && drawerOpen && <div className={styles.backdrop} onClick={() => setDrawerOpen(false)} />}
 
       <div className={styles.content}>
-        <main ref={mainRef} className={styles.main}>
+        {/* ホームだけ フィールドの絵を 背景に しく */}
+        <main ref={mainRef} className={styles.main} data-home={location.pathname === '/' || undefined}>
           <ErrorBoundary>
             <Suspense fallback={<p className={styles.loading}>よみこみちゅう…</p>}>
               <Outlet />

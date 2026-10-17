@@ -9,12 +9,22 @@ import { loadStoredPassword } from '../../features/jumon/storage'
 import { dialogueBeforeAction, isShop, shopConversation, type Conversation } from '../../features/world/conversation'
 import { dialoguePages } from '../../features/world/dialogue'
 import { mapSpots } from '../../features/world/spots'
+import { treasureInfo } from '../../features/world/treasure'
 import { loadStory, storeStory, STORY_FLAGS, type Story } from '../../features/world/story'
 import type { DamdaraGame } from '../../wasm/game'
 import type { MapKind } from '../../wasm/types'
 import { useDamdara } from '../../wasm/useDamdara'
-import { getMapData, getWorldData, npcCharacterId, WORLD_MAP_ID } from '../../wasm/world'
-import { MapView, type NpcView, type SpotView } from './MapView'
+import {
+  getEncounters,
+  getFixedEncounters,
+  getMapData,
+  getWorldData,
+  heroCharacterId,
+  npcCharacterId,
+  WORLD_MAP_ID,
+} from '../../wasm/world'
+import { EncounterPanel } from './EncounterPanel'
+import { MapView, type MarkView, type NpcView, type SpotView, type TreasureView } from './MapView'
 import { TalkWindow } from './TalkWindow'
 import styles from './World.module.css'
 
@@ -51,7 +61,8 @@ interface Talk {
 
 /** アレフガルドの せかい：フィールド全体の ちずから まち・しろ・ダンジョンに はいり、ひとと はなせる */
 export function WorldPage() {
-  const { createGame } = useDamdara()
+  const { createGame, getMasterData } = useDamdara()
+  const master = getMasterData()
   const world = getWorldData()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
@@ -60,6 +71,13 @@ export function WorldPage() {
   /** 会話の あとで きえた ひと（`マップ id:番号`） */
   const [gone, setGone] = useState<ReadonlySet<string>>(new Set())
   const [flash, setFlash] = useState(0)
+  /** たからばこ などを しらべた ときの ウィンドウ */
+  const [notice, setNotice] = useState<{ mapId: number; title: string; lines: string[] } | null>(null)
+  /** まものを しらべる モード（フィールド）と えらんだ ばしょ */
+  const [encounterMode, setEncounterMode] = useState(false)
+  const [picked, setPicked] = useState<{ mapId: number; x: number; y: number } | null>(null)
+  /** フィールドで クリックした ところに あらわれる ゆうしゃ（key は おなじ 場所でも ズームしなおす ため） */
+  const [hero, setHero] = useState<{ x: number; y: number; key: number } | null>(null)
   const gameRef = useRef<DamdaraGame | null>(null)
 
   // ページを離れたら 会話用の ゲームを解放する
@@ -86,8 +104,57 @@ export function WorldPage() {
     return [{ index, x: npc.x, y: npc.y, characterId, name: role ?? name }]
   })
 
+  const treasures: TreasureView[] = map.treasures.map((t) => ({
+    x: t.x,
+    y: t.y,
+    kind: t.kind,
+    label: t.kind === 'chest' ? 'たからばこを あける' : 'ここを しらべる',
+  }))
+  const fixedEncounters = getFixedEncounters(map.id)
+  const fixedMarks: MarkView[] = fixedEncounters.map((f) => ({
+    x: f.x,
+    y: f.y,
+    label: `${f.fixed?.monster.name ?? 'まもの'}が でる ばしょ`,
+  }))
+
+  // でてくる まもの：えらんだ ばしょ、ダンジョンなら いりぐちの まもの（マップ全体で おなじ グループ）
+  const pickedHere = picked?.mapId === map.id ? picked : null
+  const hasGroup = map.encounter_group != null
+  const encounterAt = pickedHere ?? (hasGroup ? (spots[0] ?? { x: 0, y: 0 }) : null)
+  const encounter = encounterAt ? getEncounters(map.id, encounterAt.x, encounterAt.y) : null
+  const isFieldMap = map.id === WORLD_MAP_ID
+
+  // ゆうしゃの 絵（いまの じょうたい の ぶき・たて、ローラひめを だいているか）
+  const heroSave = decodePassword(heroPassword()).save
+  const heroCharacter = heroCharacterId(heroSave.weapon > 0, heroSave.shield > 0, story.carrying_princess)
+
+  /** フィールドの じめんを クリック：ゆうしゃを おいて ズームし、その ばしょの まものを 出す */
+  const placeHero = (x: number, y: number) => {
+    setTalk(null)
+    setNotice(null)
+    setHero((prev) => ({ x, y, key: (prev?.key ?? 0) + 1 }))
+    setPicked({ mapId: map.id, x, y })
+  }
+
+  const openTreasure = (index: number) => {
+    const info = treasureInfo(map.treasures[index], {
+      item: (id) => master.items.find((i) => i.id === id)?.name ?? '？',
+      weapon: (id) => master.weapons.find((w) => w.id === id)?.name ?? '？',
+      armor: (id) => master.armors.find((a) => a.id === id)?.name ?? '？',
+      dialogue: (id) => world.dialogues.get(id),
+    })
+    setTalk(null)
+    setNotice({ mapId: map.id, ...info })
+  }
+
+  const toBattle = (monsterId: number) => {
+    storeLastMonster(monsterId)
+    navigate('/battle')
+  }
+
   const go = (toMap: number) => {
     setTalk(null)
+    setNotice(null)
     setParams(toMap === WORLD_MAP_ID ? {} : { map: String(toMap) })
   }
 
@@ -139,6 +206,7 @@ export function WorldPage() {
   }
 
   const talkTo = (index: number) => {
+    setNotice(null)
     const seed = newSeed()
     const { conversation, pages } = converse(index, [], seed)
     const speaker = npcs.find((n) => n.index === index)?.name ?? 'ひと'
@@ -173,6 +241,7 @@ export function WorldPage() {
 
   const isField = map.id === WORLD_MAP_ID
   const currentTalk = talk?.mapId === map.id ? talk : null
+  const currentNotice = notice?.mapId === map.id ? notice : null
   const battle = currentTalk?.conversation.actions.find((a) => a.type === 'battle')
 
   return (
@@ -192,7 +261,38 @@ export function WorldPage() {
       }
     >
       <div className={styles.layout}>
-        <MapView key={map.id} map={map} spots={spots} npcs={npcs} onSpot={go} onTalk={talkTo} flash={flash}>
+        <MapView
+          key={map.id}
+          map={map}
+          spots={spots}
+          npcs={npcs}
+          onSpot={go}
+          onTalk={talkTo}
+          treasures={treasures}
+          onTreasure={openTreasure}
+          fixed={fixedMarks}
+          onFixed={(i) => setPicked({ mapId: map.id, x: fixedEncounters[i].x, y: fixedEncounters[i].y })}
+          encounter={
+            isFieldMap && encounterMode
+              ? {
+                  zoneSize: map.encounter_zone_size ?? null,
+                  selected: pickedHere,
+                  onSelect: (x, y) => setPicked({ mapId: map.id, x, y }),
+                }
+              : null
+          }
+          onFieldClick={isFieldMap ? placeHero : undefined}
+          hero={isFieldMap && hero ? { ...hero, characterId: heroCharacter } : null}
+          flash={flash}
+        >
+          {currentNotice && (
+            <TalkWindow
+              key={`${currentNotice.title}:${currentNotice.lines.join()}`}
+              speaker={currentNotice.title}
+              pages={[currentNotice.lines]}
+              onClose={() => setNotice(null)}
+            />
+          )}
           {currentTalk && (
             <TalkWindow
               key={`${currentTalk.npcIndex}:${currentTalk.answers.join()}`}
@@ -203,14 +303,7 @@ export function WorldPage() {
               shopItems={currentTalk.conversation.shopItems}
               footer={
                 battle && (
-                  <button
-                    type="button"
-                    data-variant="primary"
-                    onClick={() => {
-                      storeLastMonster(battle.monster_id)
-                      navigate('/battle')
-                    }}
-                  >
+                  <button type="button" data-variant="primary" onClick={() => toBattle(battle.monster_id)}>
                     <Swords size={14} />
                     せんとうへ
                   </button>
@@ -225,10 +318,11 @@ export function WorldPage() {
           <p className={styles.hint}>
             <MapPin size={13} />
             {isField
-              ? 'しろ・まち・どうくつ を クリックすると なかに はいれます。'
+              ? 'しろ・まち・どうくつ を クリックすると なかに はいれます。じめんを クリックすると ゆうしゃが あらわれます。'
               : npcs.length > 0
                 ? 'ひとを クリックすると はなしが きけます。かいだん・でぐちから ほかの ばしょへ いけます。'
                 : 'かいだん・でぐちから ほかの ばしょへ いけます。'}
+            {treasures.length > 0 && ' たからばこ（てんせん）・？ を クリックすると なかみが わかります。'}
           </p>
 
           {destinations.length > 0 && (
@@ -242,6 +336,23 @@ export function WorldPage() {
                 </li>
               ))}
             </ul>
+          )}
+
+          <EncounterPanel
+            encounter={encounter}
+            placeholder={
+              isFieldMap
+                ? '「まものを しらべる」を オンにして ちずを クリックすると、その ばしょの まものを だします。'
+                : 'ここでは まものは でてこない。'
+            }
+            fixed={fixedEncounters}
+            onBattle={toBattle}
+          />
+          {isFieldMap && (
+            <label className={styles.storySwitch}>
+              <input type="checkbox" checked={encounterMode} onChange={(e) => setEncounterMode(e.target.checked)} />
+              まものを しらべる（くかくの せんを ひょうじ）
+            </label>
           )}
 
           <section className={styles.story} aria-label="ものがたりの すすみぐあい">

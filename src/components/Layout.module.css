@@ -143,6 +143,19 @@
   padding: 0 28px var(--space-5);
 }
 
+/* ホーム：フィールドの絵を 全体の 背景に（文字が よめるよう すこし くらく する） */
+.main[data-home] {
+  background:
+    linear-gradient(rgb(13 15 20 / 45%), rgb(13 15 20 / 70%)),
+    url('../assets/field.png') center / cover no-repeat;
+  image-rendering: pixelated;
+}
+
+/* ドットを くっきりさせるのは 背景だけ（中身には 引きつがない） */
+.main[data-home] > * {
+  image-rendering: auto;
+}
+
 .loading {
   color: var(--color-muted);
   text-align: center;

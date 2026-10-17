@@ -29,6 +29,91 @@
   background: #000;
 }
 
+/* 拡大したら この中で スクロール・ドラッグする */
+.viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.viewport[data-zoomed] {
+  overflow: auto;
+  cursor: grab;
+  scrollbar-width: thin;
+}
+
+.viewport[data-dragging] {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.content {
+  position: relative;
+}
+
+/* じめんを クリックすると ゆうしゃが あらわれる */
+.content[data-walkable] {
+  cursor: pointer;
+}
+
+.viewport[data-zoomed] .content[data-walkable] {
+  cursor: grab;
+}
+
+.hero {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  animation: hero-appear 0.35s ease-out;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 2px solid var(--color-accent);
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px #000;
+}
+
+@keyframes hero-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-60%) scale(1.6);
+  }
+}
+
+.zoomBar {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 8px;
+  background: rgb(10 12 16 / 85%);
+}
+
+.zoomBar button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.zoomValue {
+  min-width: 2.2em;
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
 .mapImage,
 .mapImageSmooth {
   display: block;
@@ -99,6 +184,110 @@
 .spot:hover .spotLabel,
 .spot:focus-visible .spotLabel {
   visibility: visible;
+}
+
+/* ===== たからばこ・しらべる・かならず でる まもの ===== */
+
+.chest,
+.chest:hover:not(:disabled),
+.hidden,
+.hidden:hover:not(:disabled),
+.fixed,
+.fixed:hover:not(:disabled) {
+  position: absolute;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.chest::before,
+.hidden::before,
+.fixed::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 16px);
+  aspect-ratio: 1;
+  border-radius: 3px;
+  transform: translate(-50%, -50%);
+}
+
+/* たからばこ：しろい てんせんの わく */
+.chest::before {
+  border: 2px dashed rgb(252 252 252 / 85%);
+}
+
+/* しらべると みつかる：？ */
+.hidden,
+.fixed {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: max(60%, 10px);
+  font-weight: 700;
+  text-shadow: 0 0 3px #000;
+}
+
+.hidden::before {
+  border: 2px dashed #7cc4ff;
+  background: rgb(0 120 255 / 25%);
+}
+
+/* かならず まものが でる：あかい わく */
+.fixed::before {
+  border: 2px solid #f2705f;
+  border-radius: 50%;
+  background: rgb(242 112 95 / 35%);
+}
+
+.chest:hover::before,
+.chest:focus-visible::before,
+.hidden:hover::before,
+.hidden:focus-visible::before,
+.fixed:hover::before,
+.fixed:focus-visible::before {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.chest:focus-visible,
+.hidden:focus-visible,
+.fixed:focus-visible {
+  box-shadow: none;
+}
+
+/* ===== まものを しらべる ===== */
+
+.encounterLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  cursor: crosshair;
+}
+
+.encounterLayer[data-zones] {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 45%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 45%) 1px, transparent 1px);
+  background-size: var(--zone-x) var(--zone-y);
+}
+
+.zoneSelected {
+  position: absolute;
+  background: rgb(245 185 66 / 22%);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+  pointer-events: none;
+}
+
+.tileSelected {
+  position: absolute;
+  min-width: 6px;
+  min-height: 6px;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 2px #000;
+  pointer-events: none;
 }
 
 /* ===== ひと ===== */
@@ -373,8 +562,74 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .hero,
   .spot::before,
   .talkMore {
     animation: none;
   }
+}
+
+/* ===== でてくる まもの ===== */
+
+.encounter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.encounterRate {
+  margin: 0;
+  font-size: var(--font-size-xs);
+}
+
+.encounterSub {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.monsters {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.monster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px 2px 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-input);
+}
+
+.monsterName {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monsterNote {
+  margin-left: auto;
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.monster button {
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
 }

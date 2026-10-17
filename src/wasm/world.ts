@@ -3,7 +3,15 @@
 
 import type { DamdaraGame } from './game'
 import { createGame } from './init'
-import type { CharacterSpriteSummary, DialogueData, GameMapData, MapSummary, TalkData, WarpData } from './types'
+import type {
+  CharacterSpriteSummary,
+  DialogueData,
+  EncounterData,
+  GameMapData,
+  MapSummary,
+  TalkData,
+  WarpData,
+} from './types'
 
 /** タイル 1 まいの 大きさ（ドット） */
 export const TILE_SIZE = 16
@@ -73,6 +81,11 @@ export function npcCharacterId(sprite: number, mapId: number, afterEnding = fals
   return game().npcCharacterId(sprite, mapId, afterEnding)
 }
 
+/** ゆうしゃの キャラクター id */
+export function heroCharacterId(hasWeapon: boolean, hasShield: boolean, withPrincess: boolean): number {
+  return game().heroCharacterId(hasWeapon, hasShield, withPrincess)
+}
+
 const characterImages = new Map<string, ImageData>()
 
 /** キャラクターの 1 コマ（frame は 0 か 1） */
@@ -85,4 +98,28 @@ export function getCharacterImage(id: number, frame: number): ImageData {
     characterImages.set(key, image)
   }
   return image
+}
+
+/** その ばしょで でてくる まもの */
+export function getEncounters(mapId: number, x: number, y: number): EncounterData {
+  return game().getEncounters(mapId, x, y)
+}
+
+const fixedEncounters = new Map<number, EncounterData[]>()
+
+/** マップの中で かならず まものが でてくる ばしょ（ゴーレム など） */
+export function getFixedEncounters(mapId: number): EncounterData[] {
+  let found = fixedEncounters.get(mapId)
+  if (!found) {
+    const { width, height } = getMapData(mapId)
+    found = []
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const encounter = game().getEncounters(mapId, x, y)
+        if (encounter.fixed) found.push(encounter)
+      }
+    }
+    fixedEncounters.set(mapId, found)
+  }
+  return found
 }

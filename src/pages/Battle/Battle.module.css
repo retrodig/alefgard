@@ -21,8 +21,8 @@
   .page {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      'setup'
-      'screen';
+      'screen'
+      'setup';
   }
 
   /* 戦闘中は せんとう画面だけにする（決着すると じゅんび に戻れる） */

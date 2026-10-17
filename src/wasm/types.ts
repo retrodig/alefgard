@@ -1,4 +1,4 @@
-// damdara 1.2.0 の WASM API が返す値の型（src/wasm.rs の構造体に対応）
+// damdara 1.4.0 の WASM API が返す値の型（src/wasm.rs の構造体に対応）
 
 export interface PlayerSummary {
   name: string
@@ -183,6 +183,61 @@ export interface GameMapData extends MapSummary {
   /** 行優先（index = y * width + x） */
   tiles: number[]
   npcs: NpcData[]
+  treasures: TreasureData[]
+  /** ダンジョンの まものの グループ（まち・しろ・ほこら・フィールドには ない） */
+  encounter_group?: number | null
+  /** フィールドの くかくの 大きさ（タイル） */
+  encounter_zone_size?: number | null
+  /** フィールドの くかくごとの グループ（[y][x]） */
+  encounter_zones?: number[][] | null
+}
+
+export type TreasureContent =
+  | { type: 'item'; item: number }
+  | { type: 'herb' }
+  | { type: 'key' }
+  | { type: 'weapon'; weapon: number }
+  | { type: 'armor'; armor: number }
+  | { type: 'gold'; min: number; max: number }
+  | { type: 'item_or_gold'; item: number; one_in: number; gold_min: number; gold_max: number }
+  | { type: 'tablet' }
+  | { type: 'hidden_stairs' }
+  | { type: 'hint'; dialogue_id: number }
+  | { type: 'decoration' }
+
+/** この じょうけんの ときは からっぽ */
+export type TreasureEmptyIf =
+  | { type: 'herbs_full' }
+  | { type: 'keys_full' }
+  | { type: 'has_item'; item: number }
+  | { type: 'has_any_item'; items: number[] }
+  | { type: 'weapon_equipped'; weapon: number }
+  | { type: 'armor_equipped'; armor: number }
+  | { type: 'hidden_stairs_found' }
+
+/** たからばこ（chest）と しらべると みつかる もの（hidden） */
+export interface TreasureData {
+  map_id: number
+  x: number
+  y: number
+  kind: 'chest' | 'hidden'
+  content: TreasureContent
+  name?: string | null
+  empty_if?: TreasureEmptyIf | null
+}
+
+/** その ばしょで でてくる まもの（get_encounters） */
+export interface EncounterData {
+  map_id: number
+  x: number
+  y: number
+  group?: number | null
+  /** 5 ひき（それぞれ 1/5） */
+  monsters: { id: number; name: string }[]
+  /** 1 ぽ あるくごとに 1/one_in で せんとう（まち など では ない） */
+  one_in?: number | null
+  /** かならず でてくる まもの（once：いちど たおすと でない） */
+  fixed?: { monster: { id: number; name: string }; once: boolean } | null
 }
 
 /** かいだん・いりぐち：[マップ id, x, y] から [マップ id, x, y] へ */
