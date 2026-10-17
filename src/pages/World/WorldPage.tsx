@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
-import { ArrowLeft, DoorOpen, MapPin, Swords } from 'lucide-react'
+import { ArrowLeft, DoorOpen, Swords } from 'lucide-react'
+import { HelpTip } from '../../components/HelpTip'
 import { Window } from '../../components/Window'
 import { storeLastMonster } from '../../features/battle/storage'
 import { chunkPassword, formatName } from '../../features/jumon/kana'
@@ -315,15 +316,18 @@ export function WorldPage() {
         </MapView>
 
         <aside className={styles.side}>
-          <p className={styles.hint}>
-            <MapPin size={13} />
-            {isField
-              ? 'しろ・まち・どうくつ を クリックすると なかに はいれます。じめんを クリックすると ゆうしゃが あらわれます。'
-              : npcs.length > 0
-                ? 'ひとを クリックすると はなしが きけます。かいだん・でぐちから ほかの ばしょへ いけます。'
-                : 'かいだん・でぐちから ほかの ばしょへ いけます。'}
-            {treasures.length > 0 && ' たからばこ（てんせん）・？ を クリックすると なかみが わかります。'}
-          </p>
+          <div className={styles.sideHeader}>
+            <h3 className={styles.storyTitle}>いける ばしょ</h3>
+            <HelpTip label="ちずの つかいかた">
+              {isField
+                ? 'しろ・まち・どうくつ を クリックすると なかに はいれます。じめんを クリックすると ゆうしゃが あらわれます。'
+                : npcs.length > 0
+                  ? 'ひとを クリックすると はなしが きけます。かいだん・でぐちから ほかの ばしょへ いけます。'
+                  : 'かいだん・でぐちから ほかの ばしょへ いけます。'}
+              {treasures.length > 0 && ' たからばこ（てんせん）・？ を クリックすると なかみが わかります。'}
+              {' みぎしたの むしめがね・ctrl＋ホイール で 拡大し、ドラッグで いどう できます。'}
+            </HelpTip>
+          </div>
 
           {destinations.length > 0 && (
             <ul className={styles.places} aria-label="いける ばしょ">
@@ -340,10 +344,11 @@ export function WorldPage() {
 
           <EncounterPanel
             encounter={encounter}
-            placeholder={
+            placeholder={isFieldMap ? 'ちずの ばしょを えらぶと だします。' : 'ここでは まものは でてこない。'}
+            help={
               isFieldMap
-                ? '「まものを しらべる」を オンにして ちずを クリックすると、その ばしょの まものを だします。'
-                : 'ここでは まものは でてこない。'
+                ? 'じめんを クリックして ゆうしゃを おくか、「まものを しらべる」を オンにして ちずを クリックすると、その ばしょの まもの と せんとうに なる かくりつを だします。'
+                : 'この ばしょで でてくる まもの です。'
             }
             fixed={fixedEncounters}
             onBattle={toBattle}
@@ -356,7 +361,12 @@ export function WorldPage() {
           )}
 
           <section className={styles.story} aria-label="ものがたりの すすみぐあい">
-            <h3 className={styles.storyTitle}>ものがたりの すすみぐあい</h3>
+            <div className={styles.sideHeader}>
+              <h3 className={styles.storyTitle}>ものがたりの すすみぐあい</h3>
+              <HelpTip label="ものがたりの すすみぐあい の せつめい">
+                はなしの ないようが かわります。ゆうしゃは「いまの じょうたい」（ふっかつのじゅもん ページ）です。
+              </HelpTip>
+            </div>
             {STORY_FLAGS.map(({ key, label }) => (
               <label key={key} className={styles.storySwitch}>
                 <input
@@ -370,9 +380,6 @@ export function WorldPage() {
                 {label}
               </label>
             ))}
-            <p className={styles.storyNote}>
-              はなしの ないようが かわります。ゆうしゃは「いまの じょうたい」（ふっかつのじゅもん ページ）です。
-            </p>
           </section>
         </aside>
       </div>

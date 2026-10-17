@@ -468,25 +468,19 @@
   min-width: 0;
 }
 
-.hint {
+/* みだしと「？」 */
+.sideHeader {
   display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  margin: 0;
-  color: var(--color-muted);
-  font-size: var(--font-size-xs);
-}
-
-.hint svg {
-  flex: none;
-  margin-top: 3px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .places {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin: 10px 0 0;
+  margin: 6px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -544,7 +538,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .hint {
+  .side {
     margin-top: 12px;
   }
 }

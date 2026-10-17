@@ -16,6 +16,12 @@ import type {
 /** タイル 1 まいの 大きさ（ドット） */
 export const TILE_SIZE = 16
 
+/** よく つかう キャラクターの id（get_character_sprites の 番号） */
+export const CHARACTER = {
+  king: 4,
+  oldMan: 5,
+} as const
+
 /** フィールド（アレフガルド）の マップ id */
 export const WORLD_MAP_ID = 1
 

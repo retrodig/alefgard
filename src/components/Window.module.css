@@ -40,6 +40,24 @@
   margin: -8px 0 16px;
 }
 
+/* 絵（左上）と ボタン（右上）を おなじ 行に ならべる */
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: -8px 0 12px;
+}
+
+.topRow > .actions {
+  flex: 1;
+  margin: 0;
+}
+
+.icon {
+  flex: none;
+  line-height: 0;
+}
+
 .body > :first-child {
   margin-top: 0;
 }

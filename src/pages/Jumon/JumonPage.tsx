@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { Gamepad2, Link2, TriangleAlert } from 'lucide-react'
 import { CopyButton } from '../../components/CopyButton'
+import { CharacterSprite } from '../../components/CharacterSprite'
 import { Window } from '../../components/Window'
 import { normalizePassword } from '../../features/jumon/kana'
 import { decodePassword, DEFAULT_SAVE, encodePassword, type SaveData } from '../../features/jumon/password'
@@ -11,6 +12,7 @@ import { PasswordForm } from './PasswordForm'
 import { RetroDialog } from './RetroDialog'
 import { SaveEditor } from './SaveEditor'
 import { StatusPanel } from './StatusPanel'
+import { CHARACTER } from '../../wasm/world'
 import styles from './Jumon.module.css'
 
 function buildShareUrl(password: string): string {
@@ -85,6 +87,7 @@ export function JumonPage() {
     <div className={styles.dashboard}>
       <Window
         title="ふっかつのじゅもん"
+        icon={<CharacterSprite characterId={CHARACTER.oldMan} label="ろうじん" />}
         className={styles.areaJumon}
         actions={
           <button type="button" onClick={() => setRetroOpen(true)}>

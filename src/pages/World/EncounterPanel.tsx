@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react'
 import { Swords } from 'lucide-react'
+import { HelpTip } from '../../components/HelpTip'
 import { MonsterSprite } from '../../components/MonsterSprite'
 import { summarizeEncounter } from '../../features/world/encounter'
 import type { EncounterData } from '../../wasm/types'
@@ -9,6 +11,8 @@ interface Props {
   encounter: EncounterData | null
   /** encounter が ない ときの あんない */
   placeholder: string
+  /** 「？」で 出す せつめい */
+  help: ReactNode
   /** このマップで かならず まものが でる ばしょ */
   fixed: EncounterData[]
   onBattle: (monsterId: number) => void
@@ -28,11 +32,14 @@ function MonsterRow({ id, name, note, onBattle }: { id: number; name: string; no
 }
 
 /** でてくる まもの：5 ひきの うちわけ・せんとうの かくりつ・かならず でる まもの */
-export function EncounterPanel({ encounter, placeholder, fixed, onBattle }: Props) {
+export function EncounterPanel({ encounter, placeholder, help, fixed, onBattle }: Props) {
   const monsters = encounter ? summarizeEncounter(encounter.monsters) : []
   return (
     <section className={styles.encounter} aria-label="でてくる まもの">
-      <h3 className={styles.storyTitle}>でてくる まもの</h3>
+      <div className={styles.sideHeader}>
+        <h3 className={styles.storyTitle}>でてくる まもの</h3>
+        <HelpTip label="でてくる まもの の せつめい">{help}</HelpTip>
+      </div>
       {encounter && monsters.length > 0 ? (
         <>
           {encounter.one_in && (

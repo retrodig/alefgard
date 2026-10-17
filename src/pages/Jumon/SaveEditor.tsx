@@ -1,9 +1,11 @@
 import { useId, useState, type ReactNode } from 'react'
 import { RotateCcw, Zap } from 'lucide-react'
+import { CharacterSprite } from '../../components/CharacterSprite'
 import { Window } from '../../components/Window'
 import { formatName, NAME_MAX_LENGTH, normalizeName } from '../../features/jumon/kana'
 import { DEFAULT_SAVE, LIMITS, padName, type SaveData, type SaveFlags } from '../../features/jumon/password'
 import type { MasterData } from '../../wasm/init'
+import { CHARACTER } from '../../wasm/world'
 import styles from './Jumon.module.css'
 
 interface Props {
@@ -141,6 +143,7 @@ export function SaveEditor({ save, level, master, onChange }: Props) {
   return (
     <Window
       title="ぼうけんのしょ"
+      icon={<CharacterSprite characterId={CHARACTER.king} label="おうさま" />}
       actions={
         <>
           <button type="button" data-variant="ghost" onClick={() => onChange({ ...DEFAULT_SAVE, name: save.name })}>
