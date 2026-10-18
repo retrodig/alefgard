@@ -162,6 +162,11 @@ export class DamdaraGame {
     return call(() => this.game.get_encounters(mapId, x, y))
   }
 
+  /** 20 の まものの グループ（それぞれ 5 ひきの モンスター id） */
+  getEncounterGroups(): number[][] {
+    return call(() => this.game.get_encounter_groups())
+  }
+
   getTalks(): TalkData[] {
     return call(() => this.game.get_talks())
   }

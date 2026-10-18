@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { Gamepad2, Link2, TriangleAlert } from 'lucide-react'
 import { CopyButton } from '../../components/CopyButton'
+import { HelpTip } from '../../components/HelpTip'
 import { CharacterSprite } from '../../components/CharacterSprite'
 import { Window } from '../../components/Window'
 import { normalizePassword } from '../../features/jumon/kana'
@@ -90,10 +91,15 @@ export function JumonPage() {
         icon={<CharacterSprite characterId={CHARACTER.oldMan} label="ろうじん" />}
         className={styles.areaJumon}
         actions={
-          <button type="button" onClick={() => setRetroOpen(true)}>
-            <Gamepad2 size={15} />
-            とうじの がめんで いれる
-          </button>
+          <>
+            <HelpTip label="ふっかつのじゅもん の いれかた">
+              じゅもんを いれると パラメータに はんえいします。空白・改行・カタカナは自動で整えます。
+            </HelpTip>
+            <button type="button" onClick={() => setRetroOpen(true)}>
+              <Gamepad2 size={15} />
+              とうじの がめんで いれる
+            </button>
+          </>
         }
       >
         <PasswordForm password={password} onApply={applyPassword}>

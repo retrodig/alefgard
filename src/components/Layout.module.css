@@ -143,16 +143,28 @@
   padding: 0 28px var(--space-5);
 }
 
-/* ホーム：フィールドの絵を 全体の 背景に（文字が よめるよう すこし くらく する） */
-.main[data-home] {
-  background:
-    linear-gradient(rgb(13 15 20 / 45%), rgb(13 15 20 / 70%)),
-    url('../assets/field.png') center / cover no-repeat;
+/* ゲームの絵を 全体の 背景に（文字が よめるよう すこし くらく する） */
+.main[data-bg] {
+  --bg-shade: linear-gradient(rgb(13 15 20 / 45%), rgb(13 15 20 / 70%));
   image-rendering: pixelated;
 }
 
+/* ホーム：フィールド */
+.main[data-bg='field'] {
+  background:
+    var(--bg-shade),
+    url('../assets/field.png') center / cover no-repeat;
+}
+
+/* ふっかつのじゅもん：おしろの なか */
+.main[data-bg='castle'] {
+  background:
+    var(--bg-shade),
+    url('../assets/field_2.png') center / cover no-repeat;
+}
+
 /* ドットを くっきりさせるのは 背景だけ（中身には 引きつがない） */
-.main[data-home] > * {
+.main[data-bg] > * {
   image-rendering: auto;
 }
 

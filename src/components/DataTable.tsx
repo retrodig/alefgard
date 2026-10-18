@@ -23,6 +23,10 @@ interface Props<T> {
   compact?: boolean
   /** false にすると見出しクリックでの並べ替えをなくす */
   sortable?: boolean
+  /** 行を クリック（Enter）したとき。指定すると 行が ボタンのように なる */
+  onRowClick?: (row: T) => void
+  /** onRowClick の ときの 行の 読み上げ */
+  rowLabel?: (row: T) => string
   /** 最初の並び順。指定すると「並べ替えなし」に戻らず、昇順と降順の切り替えだけになる */
   defaultSort?: Sort
 }
@@ -37,6 +41,8 @@ export function DataTable<T>({
   compact = false,
   sortable: tableSortable = true,
   defaultSort,
+  onRowClick,
+  rowLabel,
 }: Props<T>) {
   const [sort, setSort] = useState<Sort>(defaultSort ?? null)
   const [query, setQuery] = useState('')
@@ -112,7 +118,23 @@ export function DataTable<T>({
           </thead>
           <tbody>
             {visibleRows.map((row) => (
-              <tr key={rowKey(row)}>
+              <tr
+                key={rowKey(row)}
+                className={onRowClick ? styles.clickable : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                aria-label={onRowClick && rowLabel ? rowLabel(row) : undefined}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                onKeyDown={
+                  onRowClick
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          onRowClick(row)
+                        }
+                      }
+                    : undefined
+                }
+              >
                 {columns.map((col) => (
                   <td
                     key={col.key}

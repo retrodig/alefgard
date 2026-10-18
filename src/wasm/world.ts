@@ -129,3 +129,11 @@ export function getFixedEncounters(mapId: number): EncounterData[] {
   }
   return found
 }
+
+let encounterGroups: number[][] | null = null
+
+/** 20 の まものの グループ（それぞれ 5 ひきの モンスター id） */
+export function getEncounterGroups(): number[][] {
+  encounterGroups ??= game().getEncounterGroups()
+  return encounterGroups
+}

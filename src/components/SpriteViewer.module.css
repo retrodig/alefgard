@@ -33,6 +33,15 @@
   width: 192px;
 }
 
+/* 3 ばい */
+.viewer[data-size='large'] .viewport {
+  height: 312px;
+}
+
+.viewer[data-size='large'] .stage {
+  width: 288px;
+}
+
 .toolbar {
   position: absolute;
   right: 6px;

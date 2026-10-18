@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TreasureData } from '../../wasm/types'
-import { summarizeEncounter } from './encounter'
+import { habitatsOf, summarizeEncounter } from './encounter'
 import { treasureInfo, type TreasureNames } from './treasure'
 
 const names: TreasureNames = {
@@ -65,6 +65,41 @@ describe('summarizeEncounter', () => {
     expect(summarizeEncounter([slime, bubble, slime, bubble, slime])).toEqual([
       { id: 0, name: 'スライム', count: 3 },
       { id: 1, name: 'スライムベス', count: 2 },
+    ])
+  })
+})
+
+describe('habitatsOf', () => {
+  const groups = [
+    [0, 1, 0, 1, 0],
+    [3, 3, 4, 4, 5],
+  ]
+  const maps = [
+    {
+      id: 1,
+      name: 'アレフガルド',
+      encounter_zones: [
+        [0, 0],
+        [1, 0],
+      ],
+    },
+    { id: 4, name: 'ラダトームのしろ' },
+    { id: 15, name: 'りゅうおうのしろ ちか1かい', encounter_group: 1 },
+  ]
+
+  it('フィールドは くかくの かず、ダンジョンは グループで しらべる', () => {
+    expect(habitatsOf(0, maps, groups, [])).toEqual([
+      { mapId: 1, mapName: 'アレフガルド', zones: 3, totalZones: 4, count: 3, fixed: false },
+    ])
+    expect(habitatsOf(3, maps, groups, [])).toEqual([
+      { mapId: 1, mapName: 'アレフガルド', zones: 1, totalZones: 4, count: 2, fixed: false },
+      { mapId: 15, mapName: 'りゅうおうのしろ ちか1かい', zones: null, totalZones: null, count: 2, fixed: false },
+    ])
+  })
+
+  it('かならず でる ばしょ だけでも のせる', () => {
+    expect(habitatsOf(24, maps, groups, [1])).toEqual([
+      { mapId: 1, mapName: 'アレフガルド', zones: 0, totalZones: 4, count: 0, fixed: true },
     ])
   })
 })

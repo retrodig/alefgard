@@ -34,11 +34,9 @@ export function PasswordForm({ password, onApply, children }: Props) {
 
   return (
     <div className={styles.form}>
-      <label htmlFor={inputId} className={styles.hint}>
-        じゅもんを いれると パラメータに はんえいします。空白・改行・カタカナは自動で整えます。
-      </label>
       <textarea
         id={inputId}
+        aria-label="ふっかつのじゅもん"
         className={styles.passwordInput}
         value={draft}
         onChange={(e) => handleChange(e.target.value)}

@@ -6,6 +6,8 @@ import styles from './SpriteViewer.module.css'
 interface Props {
   monsterId: number
   label: string
+  /** large：ゲームの 3 ばい（くわしい 画面 など） */
+  size?: 'normal' | 'large'
 }
 
 /** 拡大の段階（ドットがそろうよう整数倍） */
@@ -63,7 +65,7 @@ function backgroundStyle(value: string) {
  * モンスターの絵を拡大・移動して見るビューア。
  * 虫眼鏡ボタンで拡大縮小し、拡大中はドラッグ（または矢印キー）で表示位置を動かせる。
  */
-export function SpriteViewer({ monsterId, label }: Props) {
+export function SpriteViewer({ monsterId, label, size = 'normal' }: Props) {
   const [levelIndex, setLevelIndex] = useState(0)
   const [offset, setOffset] = useState<Offset>({ x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
@@ -142,7 +144,7 @@ export function SpriteViewer({ monsterId, label }: Props) {
   }
 
   return (
-    <div className={styles.viewer} style={backgroundStyle(background)}>
+    <div className={styles.viewer} style={backgroundStyle(background)} data-size={size}>
       <div
         ref={viewportRef}
         className={styles.viewport}

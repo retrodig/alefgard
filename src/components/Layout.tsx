@@ -46,6 +46,12 @@ function saveCollapsed(value: boolean) {
   }
 }
 
+/** 背景に ゲームの絵を しく ページ（パス → 絵の なまえ。CSS の data-bg で えらぶ） */
+const PAGE_BACKGROUNDS: Record<string, string> = {
+  '/': 'field',
+  '/jumon': 'castle',
+}
+
 export function Layout() {
   const isMobile = useMediaQuery(MOBILE_QUERY)
   // PC：アイコンだけに畳む / スマホ：ドロワーとして開閉する
@@ -133,8 +139,8 @@ export function Layout() {
       {isMobile && drawerOpen && <div className={styles.backdrop} onClick={() => setDrawerOpen(false)} />}
 
       <div className={styles.content}>
-        {/* ホームだけ フィールドの絵を 背景に しく */}
-        <main ref={mainRef} className={styles.main} data-home={location.pathname === '/' || undefined}>
+        {/* ホーム・ふっかつのじゅもん は ゲームの絵を 背景に しく */}
+        <main ref={mainRef} className={styles.main} data-bg={PAGE_BACKGROUNDS[location.pathname]}>
           <ErrorBoundary>
             <Suspense fallback={<p className={styles.loading}>よみこみちゅう…</p>}>
               <Outlet />
